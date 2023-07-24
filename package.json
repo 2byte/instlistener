@@ -1,0 +1,26 @@
+{
+  "name": "app_instlistener",
+  "version": "1.0.0",
+  "description": "instagram new posts a listener",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github-2byte:2byte/instlistener"
+  },
+  "keywords": [
+    "instagram",
+    "scanner"
+  ],
+  "author": "2byte",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "selenium-webdriver": "^4.10.0",
+    "sqlite": "^5.0.1",
+    "vitest": "^0.33.0"
+  }
+}
