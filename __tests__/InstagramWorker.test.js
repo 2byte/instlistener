@@ -6,11 +6,11 @@ import SeleniumRunner from "../src/SeleniumRunner";
 import SeleniumEage from "../src/SeleniumEdge";
 import path from "node:path";
 import InstagramClient from "../src/InstagramClient";
-import * as dotenv from "dotenv";
+import {config} from "dotenv";
 
 describe("InstagramWorker", () => {
 
-    const loadEnv = dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+    const loadEnv = config({ path: path.resolve(__dirname, '../../.env') });
 
     if (loadEnv.error) {
         throw new Error("Failed to load .env file", { cause: loadEnv.error });

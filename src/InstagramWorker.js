@@ -1,3 +1,7 @@
+import AccountManager from "./AccountManager.js";
+import InstagramClient from "./InstagramClient.js";
+import SeleniumRunner from "./SeleniumRunner.js";
+
 export default class InstagramWorker {
     /**
      * @type {SeleniumRunner}
@@ -137,5 +141,9 @@ export default class InstagramWorker {
 
     get statTickLoop() {
         return this.#stateTickLoop;
+    }
+
+    get instagramAccountManager() {
+        return this.#accountManager;
     }
 }

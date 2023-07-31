@@ -1,8 +1,10 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from "vite";
+import {resolve} from "path";
 
 export default defineConfig({
-    plugins: [],
+    plugins: [
+    ],
     test: {
-        include: ['**/*\.test\.js']
-    }
+        include: ["**/*.test.js"],
+    },
 });

@@ -2,6 +2,9 @@ import AccountModel from './AccountModel.js';
 
 export default class AccountManager {
 
+    /**
+     * @type {Map<string, AccountModel>}
+     */
     #accounts = new Map();
     /**
      * @type {sqlite3.Database}
@@ -27,6 +30,48 @@ export default class AccountManager {
         }
 
         return this;
+    }
+
+    addAccount(attributes) {
+        return AccountModel.create(attributes, this.db);
+    }
+
+    async getAccount(id) {
+        await this.loadAccounts();
+        
+        return this.find(id)?.attributes;
+    }
+
+    deleteAccount(id) {
+        return this.find(id).delete();
+    }
+
+    /**
+     * @param {id} user id
+     * @return {AccountModel}
+     */
+    find(id) {
+        return Array.from(this.#accounts.entries()).find(([username, account]) => account.attributes.id === +id)?.[1]
+    }
+
+    async addMediaFake({count = 1, isNew = true, accountId}) {
+        const accountModel = this.find(accountId);
+
+        if (!accountModel) {
+            return false;
+        }
+
+        for (let i = 0; i < count; i++) {
+            const media = await accountModel.addMediaFake(isNew);
+        }
+
+        return true;
+    }
+
+    clearMedias(accountId) {
+        const accountModel = this.find(accountId);
+
+        return accountModel.clearMedias();
     }
 
     get accounts() {

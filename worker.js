@@ -11,29 +11,57 @@ import * as dotenv from "dotenv";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import path from "node:path";
+import yargs from "yargs";
+
+const argv = yargs(process.argv.slice(2))
+    .option("startWorker", {
+        alias: "s",
+        type: "boolean",
+        default: true,
+        describe: "Start the worker",
+    })
+    .option("withoutRunSelenium", {
+        alias: "w",
+        type: "boolean",
+        default: false,
+        describe: "Without run selenium",
+    })
+    .option("h", {
+        alias: "h",
+        type: "boolean",
+        default: false,
+        describe: "Help",
+    }).argv;
 
 dotenv.config();
 
 const pathToDatabase = path.resolve(process.cwd() + "/database/database.db");
 
 sqlite3.verbose();
-    
+
 const db = await open({
     filename: pathToDatabase,
     driver: sqlite3.cached.Database,
 });
 
-const seleniumDriver = await SeleniumEage.init(
+const initDriver = await SeleniumEage.init(
     path.resolve("./drivers/edgedriver_win64/msedgedriver.exe")
-).initSelenium();
+);
 
-const seleniumRunner = SeleniumRunner.init(seleniumDriver);
+let instagramClient;
+let seleniumRunner;
 
-const instagramClient = await InstagramClient.init(seleniumDriver)
-    .setCookieStoragePath(path.resolve("./cookies"))
-    .useSession();
+if (!argv.withoutRunSelenium) {
+    initDriver.initSelenium();
 
-await instagramClient.login(process.env.IG_LOGIN, process.env.IG_PASS);
+    seleniumRunner = SeleniumRunner.init(seleniumDriver);
+
+    instagramClient = await InstagramClient.init(seleniumDriver)
+        .setCookieStoragePath(path.resolve("./cookies"))
+        .useSession();
+
+    await instagramClient.login(process.env.IG_LOGIN, process.env.IG_PASS);
+}
 
 const worker = InstagramWorker.init({
     AccountManager: AccountManager.init(db),
@@ -43,15 +71,122 @@ const worker = InstagramWorker.init({
     limitLoop: process.env.LIMIT_LOOP,
 });
 
-await worker.run(() => {
-    console.log("Worked 1 loop");
-    console.log(worker.statTickLoop);
-});
+if (argv.startWorker) {
+    await worker.run(() => {
+        console.log("Worked 1 loop");
+        console.log(worker.statTickLoop);
+    });
 
-console.log('Worker is started');
+    console.log("Worker is started");
+}
 
 process.on("exit", async () => {
-    await worker.stop();
+    await worker?.stop();
     await db.close();
     console.log("Worker is stopped");
+});
+
+process.on("message", async (packet) => {
+    console.log("on message", packet);
+
+    const command = packet.data.command;
+
+    const makeDataSend = (attributes) => {
+        return {
+            type: "process:msg",
+            data: { ...attributes, command },
+        };
+    };
+
+    switch (command) {
+        case "getAccounts":
+            process.send(
+                makeDataSend({
+                    accounts: Array.from(
+                        (
+                            await worker.instagramAccountManager.loadAccounts()
+                        ).accounts.values()
+                    ).map((accountModel) => {
+                        return accountModel.attributes;
+                    }),
+                })
+            );
+            break;
+
+        case "addAccount":
+            const insertResult =
+                await worker.instagramAccountManager.addAccount(
+                    packet.data.accountData
+                );
+            process.send(
+                makeDataSend({
+                    success: true,
+                    account: insertResult,
+                })
+            );
+            break;
+
+        case "deleteAccount":
+            await worker.instagramAccountManager.loadAccounts();
+            await worker.instagramAccountManager.deleteAccount(
+                packet.data.accountId
+            );
+            process.send(makeDataSend({ success: true }));
+            break;
+
+        case "getAccount":
+            const sendPacket = {
+                account: await worker.instagramAccountManager.getAccount(
+                    packet.data.accountId
+                ),
+            };
+
+            if (sendPacket.account) {
+                sendPacket.success = true;
+            } else {
+                sendPacket.success = false;
+            }
+
+            process.send(makeDataSend(sendPacket));
+            break;
+
+        case "getNewMedia":
+            process.send(
+                makeDataSend({
+                    success: true,
+                    media: await worker.instagramAccountManager.find(
+                        packet.data.accountId
+                    ).newMedias,
+                })
+            );
+            break;
+
+        case "getMedia":
+            process.send(
+                makeDataSend({
+                    success: true,
+                    media: await worker.instagramAccountManager.find(
+                        packet.data.accountId
+                    ).medias,
+                })
+            );
+            break;
+
+        case "mediaFake":
+            if (packet.data.mediaAction === "add") {
+                await worker.instagramAccountManager.loadAccounts();
+                await worker.instagramAccountManager.addMediaFake({
+                    count: packet.data.count,
+                    isNew: packet.data?.isNew ?? 0,
+                    accountId: packet.data.accountId,
+                });
+            }
+            if (packet.data.mediaAction === "clear") {
+                await worker.instagramAccountManager.clearMedias(
+                    packet.data.accountId
+                );
+            }
+            process.send(makeDataSend({ success: true }));
+            break;
+    }
 });

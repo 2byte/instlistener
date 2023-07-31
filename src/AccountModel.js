@@ -1,4 +1,3 @@
-
 export default class AccountModel {
     #attributes = {};
     /**
@@ -15,22 +14,52 @@ export default class AccountModel {
         return new AccountModel(dataAttributes, db);
     }
 
+    static async create(attributes, db) {
+        return db.run(
+            "INSERT INTO `ig_track_accounts` (`username`, `status`, `is_new`, `created_at`, `tracking_end_date`) VALUES (?, ?, ?, datetime('now'), ?)",
+            [
+                attributes.username,
+                1,
+                1,
+                attributes.tracking_end_date
+            ]
+        );
+    }
+
     static async createTestAccounts(db) {
-        const accounts = [
-            'razgar.moscow',
-            'rm_motivator',
-            'pj_murano'
-        ];
+        const accounts = ["razgar.moscow", "rm_motivator", "pj_murano"];
 
-        const sqlFieldValues = accounts.map((account) => {
-            return `(?, ?, ?, date('now'), date('now', '+7 days'))`
-        }).join(',');
+        const sqlFieldValues = accounts
+            .map((account) => {
+                return `(?, ?, ?, date('now'), datetime('now', '+7 days'))`;
+            })
+            .join(",");
 
-        const values = accounts.map((account) => {
-            return [account, 1, 1]
-        }).flat();
-        
-        return db.run('INSERT INTO `ig_track_accounts` (`username`, `status`, `is_new`, `created_at`, `tracking_end_date`) VALUES ' + sqlFieldValues, values)
+        const values = accounts
+            .map((account) => {
+                return [account, 1, 1];
+            })
+            .flat();
+
+        return db.run(
+            "INSERT INTO `ig_track_accounts` (`username`, `status`, `is_new`, `created_at`, `tracking_end_date`) VALUES " +
+                sqlFieldValues,
+            values
+        );
+    }
+
+    get newMedias() {
+        return this.#db.all(
+            "SELECT * FROM `ig_account_medias` WHERE `is_new`=1 AND `account_id`=? ORDER BY id ASC",
+            [this.#attributes.id]
+        );
+    }
+
+    get medias() {
+        return this.#db.all(
+            "SELECT * FROM `ig_account_medias` WHERE `account_id`=? ORDER BY id ASC",
+            [this.#attributes.id]
+        );
     }
 
     get lastMedia() {
@@ -86,6 +115,22 @@ export default class AccountModel {
         return this.addMedias(media, isNew);
     }
 
+    addMediaFake(isNew) {
+        return this.addMedia({
+            shortcode: "fake",
+            display_url: "fake",
+            caption: "fake",
+            thumbnail_url: "fake",
+            is_video: 0,
+        }, isNew);
+    }
+
+    clearMedias() {
+        return this.#db.run("DELETE FROM `ig_account_medias` WHERE `account_id`=?", [
+            this.#attributes.id,
+        ]);
+    }
+
     createSqlFields(attributes) {
         return Object.keys(attributes)
             .map((key) => {
@@ -101,5 +146,13 @@ export default class AccountModel {
                 " WHERE `id`=?",
             [...Object.values(attributes), this.#attributes.id]
         );
+    }
+
+    delete() {
+        return this.#db.run('DELETE FROM `ig_track_accounts` WHERE `id`=?', [this.#attributes.id])
+    }
+
+    get attributes() {
+        return this.#attributes;
     }
 }

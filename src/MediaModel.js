@@ -1,4 +1,6 @@
 export default class MediaModel {
+    #db = null;
+
     #attributes = {
         shortcode: null,
         caption: null,
@@ -10,9 +12,10 @@ export default class MediaModel {
 
     constructor(dataAttributes) {
         this.#attributes = { ...this.#attributes, ...dataAttributes };
+        this.#db = db;
     }
 
     static make(dataAttributes) {
-        return new MediaModel(dataAttributes);
+        return new MediaModel({dataAttributes});
     }
 }

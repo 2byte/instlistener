@@ -1,4 +1,13 @@
 
+## Requirements
+```bash
+npm i -g pm2
+```
+
+```bash
+node apiServer --startWorker --withoutRunSelenium 
+```
+
 ## SeleniumRunner
 ```javascript
 import { describe, it, beforeAll, expect } from "vitest";
@@ -47,3 +56,8 @@ const newPosts await actionExec.getNewPosts('login');
 
 ```
 
+# Api server
+```bash
+node apiServer --withoutRunSelenium 
+node worker --start --withoutRunSelenium
+```
