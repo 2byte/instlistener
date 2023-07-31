@@ -288,4 +288,34 @@ describe("API Server testing", () => {
             expect(data.success).toBeTruthy()
         });
     }, 40000);
+
+    it('method status set stop tracking a account/api/v1/accounts/:id/track', async () => {
+        try {
+            await runApiServer({
+                startWorker: false,
+                withoutRunSelenium: true,
+            });
+        } catch (e) {
+            console.log("run api server error", e
+            );
+        }
+
+        const insertedAccount = await addAccount('fake');
+
+        const responseEnable = await reqApi({
+            requestMethod: "POST",
+            apiMethod: `accounts/${insertedAccount.account.lastID}/track`,
+            data: {mode: 'enable', date: '2024-01-01 23:59:59'}
+        });
+
+        expect(responseEnable.success).toBeTruthy();
+
+        const responseDisable = await reqApi({
+            requestMethod: "POST",
+            apiMethod: `accounts/${insertedAccount.account.lastID}/track`,
+            data: {mode: 'disable'}
+        });
+
+        expect(responseDisable.success).toBeTruthy();
+    }, 40000);
 });
