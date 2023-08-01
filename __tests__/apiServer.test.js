@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { config } from "dotenv";
@@ -8,15 +8,14 @@ describe("API Server testing", () => {
 
     let worker;
 
-    const runApiServer = async ({ startWorker, withoutRunSelenium } = {}) => {
+    const runApiServer = async ({ withoutRunWorker = true, withoutRunSelenium = true} = {}) => {
         return new Promise((resolve, reject) => {
-            // --startWorker false --withRunSelenium
             const nodeArgs = [path.resolve(__dirname, "../apiServer.js")];
-            if (!withoutRunSelenium) {
-                nodeArgs.push("--withRunSelenium");
+            if (withoutRunSelenium) {
+                nodeArgs.push("--withoutRunSelenium");
             }
-            if (!startWorker) {
-                nodeArgs.push("--startWorker false");
+            if (withoutRunWorker) {
+                nodeArgs.push(`--withoutRunWorker`);
             }
 
             worker = spawn("node", nodeArgs);
@@ -49,6 +48,7 @@ describe("API Server testing", () => {
         apiMethod,
         requestMethod = "GET",
         data = {},
+        // Flag for enable return response of text
         responseText = false,
     } = {}) => {
         const body = data;
@@ -135,22 +135,29 @@ describe("API Server testing", () => {
         return reqApi({ apiMethod: "accounts/" + id }).then(
             (data) => {
                 //console.log(data)
-                expect(data.account).toContain({ id: firstAccountId });
+                expect(data.account).toContain({ id });
                 return data;
             }
         );
     }
 
-    it("method /api/v1/accounts/all", async () => {
+    beforeAll(async () => {
         try {
-            await runApiServer({
-                startWorker: false,
-                withoutRunSelenium: true,
-            });
+            await runApiServer();
         } catch (e) {
             console.log("run api server error", e);
         }
+    }, 40000)
 
+    afterAll(async () => {
+        return reqApi({
+            apiMethod: 'app/stop'
+        }).then((data) => {
+            expect(data.success).toBeTruthy();
+        })
+    })
+
+    it("method /api/v1/accounts/all", async () => {
         return fetch("http://localhost:3000/api/v1/accounts/all", {
             method: "GET",
             headers: {
@@ -173,28 +180,11 @@ describe("API Server testing", () => {
     }, 40000);
 
     it("method /api/v1/accounts/add", async () => {
-        try {
-            await runApiServer({
-                startWorker: false,
-                withoutRunSelenium: true,
-            });
-        } catch (e) {
-            console.log("run api server error", e);
-        }
-
+        
         return addAccount("fake");
     }, 40000);
 
     it("method /api/v1/accounts/:id", async () => {
-        try {
-            await runApiServer({
-                startWorker: false,
-                withoutRunSelenium: true,
-            });
-        } catch (e) {
-            console.log("run api server error", e);
-        }
-
         const firstAccountId = (await reqApi({ apiMethod: "accounts/all" }))[0]
             .id;
 
@@ -202,15 +192,6 @@ describe("API Server testing", () => {
     }, 40000);
 
     it("method /api/v1/accounts/:id/medias/new", async () => {
-        try {
-            await runApiServer({
-                startWorker: false,
-                withoutRunSelenium: true,
-            });
-        } catch (e) {
-            console.log("run api server error", e);
-        }
-
         const firstAccountId = (await reqApi({ apiMethod: "accounts/all" }))[0]
             .id;
 
@@ -245,15 +226,6 @@ describe("API Server testing", () => {
     }, 40000);
 
     it("method get all medias /api/v1/accounts/:id/medias/", async () => {
-        try {
-            await runApiServer({
-                startWorker: false,
-                withoutRunSelenium: true,
-            });
-        } catch (e) {
-            console.log("run api server error", e);
-        }
-
         const firstAccountId = (await reqApi({ apiMethod: "accounts/all" }))[0]
         .id;
 
@@ -269,15 +241,6 @@ describe("API Server testing", () => {
     }, 40000);
 
     it("method get all medias /api/v1/accounts/:id/delete", async () => {
-        try {
-            await runApiServer({
-                startWorker: false,
-                withoutRunSelenium: true,
-            });
-        } catch (e) {
-            console.log("run api server error", e);
-        }
-
         const insertedAccount = await addAccount('fake');
 
         return reqApi({
@@ -290,15 +253,6 @@ describe("API Server testing", () => {
     }, 40000);
 
     it('method status set stop tracking a account/api/v1/accounts/:id/track', async () => {
-        try {
-            await runApiServer({
-                startWorker: false,
-                withoutRunSelenium: true,
-            });
-        } catch (e) {
-            console.log("run api server error", e
-            );
-        }
 
         const insertedAccount = await addAccount('fake');
 
@@ -317,5 +271,38 @@ describe("API Server testing", () => {
         });
 
         expect(responseDisable.success).toBeTruthy();
+    }, 40000);
+
+    it('method start worker /api/v1/app/start', async () => {
+        return reqApi({
+            requestMethod: "GET",
+            apiMethod: "app/start",
+        }).then((data) => {
+            //console.log(data)
+            expect(data.success).toBeTruthy()
+        })
+    }, 40000);
+
+    it('method get status worker /api/v1/app/status', async () => {
+
+        return reqApi({
+            requestMethod: "GET",
+            apiMethod: "app/status",
+        }).then((data) => {
+            console.log(data)
+            expect(data.success).toBeTruthy()
+            expect(data.status).toEqual('online')
+        })
+    }, 40000);
+
+    it('method stopping worker /api/v1/app/stop', async () => {
+
+        return reqApi({
+            requestMethod: "GET",
+            apiMethod: "app/stop",
+        }).then((data) => {
+            console.log(data)
+            expect(data.success).toBeTruthy()
+        })
     }, 40000);
 });
