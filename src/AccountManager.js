@@ -46,6 +46,14 @@ export default class AccountManager {
         return this.find(id).delete();
     }
 
+    track(id, date) {
+        return this.find(id).track({date});
+    }
+
+    untrack(id) {
+        return this.find(id).untrack();
+    }
+
     /**
      * @param {id} user id
      * @return {AccountModel}

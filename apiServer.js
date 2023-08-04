@@ -15,7 +15,7 @@ if (loadEnv.error) {
 }
 
 const argv = yargs(process.argv.slice(2))
-    .option("startWorker", {
+    .option("withoutRunWorker", {
         alias: "s",
         type: "boolean",
         default: true,
@@ -33,6 +33,21 @@ const argv = yargs(process.argv.slice(2))
         default: false,
         describe: "Help",
     }).argv;
+
+const processName = "instagramWorker";
+
+const pm2WorkerMakeParams = ({
+    withoutRunWorker = false,
+    withoutRunSelenium = false,
+}) => {
+    return {
+        script: "./worker.js",
+        name: processName,
+        args:
+            (withoutRunWorker ? '--withoutRunWorker ' : '') +
+            (withoutRunSelenium ? "--withoutRunSelenium" : ""),
+    };
+};
 
 const ipc = new (class IPCWorker {
     #queue = [];
@@ -90,7 +105,7 @@ const ipc = new (class IPCWorker {
     }
 
     listenMessageFromProcess() {
-        pm2.launchBus((err, pm2_bus) =>{
+        pm2.launchBus((err, pm2_bus) => {
             if (err) throw err;
 
             pm2_bus.on("process:msg", (packet) => {
@@ -128,52 +143,107 @@ const runApiServer = (pm2Id) => {
         res.json(accounts);
     });
     router.post("/accounts/add", async (req, res) => {
-        await ipc.sendData(pm2Id, "addAccount", {accountData: req.body});
+        await ipc.sendData(pm2Id, "addAccount", { accountData: req.body });
         const result = await ipc.waitAnswer("addAccount");
 
         res.json(result);
     });
     router.get("/accounts/:id", async (req, res) => {
-        await ipc.sendData(pm2Id, "getAccount", {accountId: req.params.id});
+        await ipc.sendData(pm2Id, "getAccount", { accountId: req.params.id });
         const result = await ipc.waitAnswer("getAccount");
 
         res.json(result);
     });
     router.post("/accounts/:id/medias/fake", async (req, res) => {
-        await ipc.sendData(pm2Id, "mediaFake", {accountId: req.params.id, ...req.body});
+        await ipc.sendData(pm2Id, "mediaFake", {
+            accountId: req.params.id,
+            ...req.body,
+        });
         const result = await ipc.waitAnswer("mediaFake");
 
         res.json(result);
     });
     router.get("/accounts/:id/medias/new", async (req, res) => {
-        await ipc.sendData(pm2Id, "getNewMedia", {accountId: req.params.id});
+        await ipc.sendData(pm2Id, "getNewMedia", { accountId: req.params.id });
         const result = await ipc.waitAnswer("getNewMedia");
 
         res.json(result);
     });
     router.get("/accounts/:id/medias", async (req, res) => {
-        await ipc.sendData(pm2Id, "getMedia", {accountId: req.params.id});
+        await ipc.sendData(pm2Id, "getMedia", { accountId: req.params.id });
         const result = await ipc.waitAnswer("getMedia");
 
         res.json(result);
     });
     router.post("/accounts/:id/delete", async (req, res) => {
-        await ipc.sendData(pm2Id, "deleteAccount", {accountId: req.params.id});
+        await ipc.sendData(pm2Id, "deleteAccount", {
+            accountId: req.params.id,
+        });
         const result = await ipc.waitAnswer("deleteAccount");
 
         res.json(result);
     });
-    router.post("/accounts/:id/stop-track", (req, res) => {
-        res.json();
+    router.post("/accounts/:id/track", async (req, res) => {
+        await ipc.sendData(pm2Id, "track", {
+            mode: req.body.mode,
+            date: req.body?.date,
+            accountId: req.params.id,
+        });
+        const result = await ipc.waitAnswer("track");
+
+        res.json(result);
     });
-    router.post("/app/start", (req, res) => {
-        res.json();
+    router.get("/app/start", (req, res) => {
+        pm2.start(
+            pm2WorkerMakeParams({
+                withoutRunWorker: argv.withoutRunWorker,
+                withoutRunSelenium: argv.withoutRunSelenium,
+            }),
+            (err, apps) => {
+                if (err) {
+                    console.error(err);
+                    res.status(500).json({ error: err.message });
+                    return false;
+                }
+
+                res.json({ success: true });
+            }
+        );
     });
-    router.post("/app/status", (req, res) => {
-        res.json();
+    router.get("/app/status", (req, res) => {
+        pm2.list(processName, (err, apps) => {
+            if (err) {
+                console.error(err);
+                res.status(500).json({ error: err.message });
+                return false;
+            }
+
+            const processInstagramWorker = apps.find(
+                (app) => app.pm2_env.name === "instagramWorker"
+            );
+
+            if (!processInstagramWorker) {
+                return req
+                    .status(500)
+                    .json({ error: "Not found process", success: false });
+            }
+
+            res.json({
+                status: processInstagramWorker.pm2_env.status,
+                success: true,
+            });
+        });
     });
-    router.post("/app/stop", (req, res) => {
-        res.json();
+    router.get("/app/stop", (req, res) => {
+        pm2.stop(processName, (err) => {
+            if (err) {
+                console.error(err);
+                res.status(500).json({ error: err.message });
+                return false;
+            }
+
+            res.json({ success: true });
+        });
     });
 
     expressApp.use("/api/:vapi", router);
@@ -183,45 +253,40 @@ const runApiServer = (pm2Id) => {
     });
 };
 
-if (argv.startWorker) {
-    pm2.connect((err) => {
-        if (err) {
-            console.error(err);
-        }
-
-        /**
-         * Start the worker
-         */
-        pm2.start(
-            {
-                script: "./worker.js",
-                name: "instagramWorker",
-                args:
-                    "--startWorker false " +
-                    (argv.withoutRunSelenium ? "--without-run-selenium" : ""),
-            },
-            (err, apps) => {
-                if (err) {
-                    console.error(err);
-                }
-
-                const process = apps.find(
-                    (app) => app.pm2_env.name === "instagramWorker"
-                );
-
-                pm2.list((err, apps) => {
-                    if (err) {
-                        return console.error(err);
-                    }
-
-                    runApiServer(process.pm2_env.pm_id);
-                });
-            }
-        );
-    });
+pm2.connect((err) => {
+    if (err) {
+        console.error(err);
+    }
 
     /**
-     * Get worker instance and run the api server
+     * Start the worker
      */
-    ipc.listenMessageFromProcess();
-}
+    pm2.start(
+        pm2WorkerMakeParams({
+            withoutRunWorker: argv.withoutRunWorker,
+            withoutRunSelenium: argv.withoutRunSelenium,
+        }),
+        (err, apps) => {
+            if (err) {
+                console.error(err);
+            }
+
+            const process = apps.find(
+                (app) => app.pm2_env.name === "instagramWorker"
+            );
+
+            pm2.list((err, apps) => {
+                if (err) {
+                    return console.error(err);
+                }
+
+                runApiServer(process.pm2_env.pm_id);
+            });
+        }
+    );
+});
+
+/**
+ * Get worker instance and run the api server
+ */
+ipc.listenMessageFromProcess();

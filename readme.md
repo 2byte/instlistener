@@ -5,7 +5,7 @@ npm i -g pm2
 ```
 
 ```bash
-node apiServer --startWorker --withoutRunSelenium 
+node apiServer --withoutRunWorker --withoutRunSelenium 
 ```
 
 ## SeleniumRunner
@@ -31,7 +31,7 @@ await seleniumRunner.stop();
 ```
 
 ## InstagramClient
-````javascript
+```javascript
 import { SeleniumEage } from "../src/SeleniumEdge";
 import path from "node:path";
 import InstagramClient from "../src/InstagramClient";
@@ -58,6 +58,24 @@ const newPosts await actionExec.getNewPosts('login');
 
 # Api server
 ```bash
-node apiServer --withoutRunSelenium 
-node worker --start --withoutRunSelenium
+node apiServer --withoutRunWorker --withoutRunSelenium 
+node worker --withoutRunWorker --withoutRunSelenium
+```
+
+# Api methods
+```javascript
+GET api/v1/accounts/all
+POST api/v1//accounts/add
+    - accountData: (username, date)
+GET api/v1/accounts/:id
+GET api/v1/accounts/:id/medias/new
+GET api/v1/accounts/:id/medias
+POST api/v1/accounts/:id/delete
+POST api/v1/accounts/:id/track
+    - mode: (enable, disable)
+    - accountId
+    - date (datetime)
+GET api/v1/app/start
+GET api/v1/app/status
+GET api/v1/app/stop
 ```

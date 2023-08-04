@@ -14,10 +14,10 @@ import path from "node:path";
 import yargs from "yargs";
 
 const argv = yargs(process.argv.slice(2))
-    .option("startWorker", {
+    .option("withoutRunWorker", {
         alias: "s",
         type: "boolean",
-        default: true,
+        default: false,
         describe: "Start the worker",
     })
     .option("withoutRunSelenium", {
@@ -32,7 +32,7 @@ const argv = yargs(process.argv.slice(2))
         default: false,
         describe: "Help",
     }).argv;
-
+console.log('xxx start worer', argv.withoutRunWorker, argv.withoutRunSelenium)
 dotenv.config();
 
 const pathToDatabase = path.resolve(process.cwd() + "/database/database.db");
@@ -71,7 +71,7 @@ const worker = InstagramWorker.init({
     limitLoop: process.env.LIMIT_LOOP,
 });
 
-if (argv.startWorker) {
+if (!argv.withoutRunWorker) {
     await worker.run(() => {
         console.log("Worked 1 loop");
         console.log(worker.statTickLoop);
@@ -186,6 +186,20 @@ process.on("message", async (packet) => {
                     packet.data.accountId
                 );
             }
+            process.send(makeDataSend({ success: true }));
+            break;
+
+        case "track":
+            const accountManager = worker.instagramAccountManager;
+            await accountManager.loadAccounts();
+
+            if (packet.data.mode === 'enable') {
+                await accountManager.track(packet.data.accountId, packet.data.date);
+            }
+            if (packet.data.mode === 'disable') {
+                await accountManager.untrack(packet.data.accountId);
+            }
+
             process.send(makeDataSend({ success: true }));
             break;
     }

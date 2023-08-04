@@ -17,12 +17,7 @@ export default class AccountModel {
     static async create(attributes, db) {
         return db.run(
             "INSERT INTO `ig_track_accounts` (`username`, `status`, `is_new`, `created_at`, `tracking_end_date`) VALUES (?, ?, ?, datetime('now'), ?)",
-            [
-                attributes.username,
-                1,
-                1,
-                attributes.tracking_end_date
-            ]
+            [attributes.username, 1, 1, attributes.tracking_end_date]
         );
     }
 
@@ -116,19 +111,23 @@ export default class AccountModel {
     }
 
     addMediaFake(isNew) {
-        return this.addMedia({
-            shortcode: "fake",
-            display_url: "fake",
-            caption: "fake",
-            thumbnail_url: "fake",
-            is_video: 0,
-        }, isNew);
+        return this.addMedia(
+            {
+                shortcode: "fake",
+                display_url: "fake",
+                caption: "fake",
+                thumbnail_url: "fake",
+                is_video: 0,
+            },
+            isNew
+        );
     }
 
     clearMedias() {
-        return this.#db.run("DELETE FROM `ig_account_medias` WHERE `account_id`=?", [
-            this.#attributes.id,
-        ]);
+        return this.#db.run(
+            "DELETE FROM `ig_account_medias` WHERE `account_id`=?",
+            [this.#attributes.id]
+        );
     }
 
     createSqlFields(attributes) {
@@ -143,13 +142,32 @@ export default class AccountModel {
         return this.#db.run(
             "UPDATE `ig_account_medias` SET " +
                 this.createSqlFields(attributes) +
+                ",`updated_at`=datetime('now')" +
                 " WHERE `id`=?",
             [...Object.values(attributes), this.#attributes.id]
         );
     }
 
     delete() {
-        return this.#db.run('DELETE FROM `ig_track_accounts` WHERE `id`=?', [this.#attributes.id])
+        return this.#db.run("DELETE FROM `ig_track_accounts` WHERE `id`=?", [
+            this.#attributes.id,
+        ]);
+    }
+
+    track({ status = 1, date = null } = {}) {
+        const curDate = new Date();
+        const datetime = `${curDate.getFullYear()}-${curDate.getMonth() + 1}-${
+            curDate.getDate() + 4
+        }`;
+
+        return this.#db.run(
+            "UPDATE `ig_track_accounts` SET `status`=?, `tracking_end_date`=? WHERE `id`=?",
+            [status, date ?? datetime, this.#attributes.id]
+        );
+    }
+
+    untrack() {
+        return this.track({ status: 0 });
     }
 
     get attributes() {
