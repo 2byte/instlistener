@@ -4,10 +4,10 @@ import express from "express";
 import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
-import InstagramWorker from "./src/InstagramWorker.js";
 
+const dirpath =  dirname(fileURLToPath(import.meta.url));
 const loadEnv = config({
-    path: dirname(fileURLToPath(import.meta.url)) + "/.env",
+    path: dirpath + "/.env",
 });
 
 if (loadEnv.error) {
@@ -41,7 +41,7 @@ const pm2WorkerMakeParams = ({
     withoutRunSelenium = false,
 }) => {
     return {
-        script: "./worker.js",
+        script: dirpath + "/worker.js",
         name: processName,
         args:
             (withoutRunWorker ? '--withoutRunWorker ' : '') +

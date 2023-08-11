@@ -65,7 +65,7 @@ node worker --withoutRunWorker --withoutRunSelenium
 # Api methods
 ```javascript
 GET api/v1/accounts/all
-POST api/v1//accounts/add
+POST api/v1/accounts/add
     - accountData: (username, date)
 GET api/v1/accounts/:id
 GET api/v1/accounts/:id/medias/new

@@ -12,6 +12,10 @@ import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import path from "node:path";
 import yargs from "yargs";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+
+const currentDirPath =  dirname(fileURLToPath(import.meta.url));
 
 const argv = yargs(process.argv.slice(2))
     .option("withoutRunWorker", {
@@ -35,7 +39,7 @@ const argv = yargs(process.argv.slice(2))
 console.log('xxx start worer', argv.withoutRunWorker, argv.withoutRunSelenium)
 dotenv.config();
 
-const pathToDatabase = path.resolve(process.cwd() + "/database/database.db");
+const pathToDatabase = path.resolve(currentDirPath + "/database/database.db");
 
 sqlite3.verbose();
 
