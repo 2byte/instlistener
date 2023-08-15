@@ -69,7 +69,24 @@ POST api/v1/accounts/add
     - accountData: (username, date)
 GET api/v1/accounts/:id
 GET api/v1/accounts/:id/medias/new
+    - id - account id (number or 'all')
+## return {
+    'id' integer
+    'account_id' int(11)
+    'ig_shortcode' varchar(100)
+    'url' varchar(255)
+    'caption' varchar(255)
+    'thumbnail_url' varchar(255)
+    'is_video' tinyint(1)
+    'is_new' tinyint(1)
+    'created_at' datetime
+    'updated_at' datetime
+}[]
+
 GET api/v1/accounts/:id/medias
+POST api/v1/accounts/:id/fake
+    - count
+    - isNew (default 0)
 POST api/v1/accounts/:id/delete
 POST api/v1/accounts/:id/track
     - mode: (enable, disable)

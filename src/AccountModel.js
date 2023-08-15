@@ -173,4 +173,8 @@ export default class AccountModel {
     get attributes() {
         return this.#attributes;
     }
+
+    static getAllAccountNewMedias(db) {
+        return db.all('SELECT * FROM `ig_account_medias` WHERE `is_new`=1 ORDER BY id ASC');
+    }
 }

@@ -155,12 +155,15 @@ process.on("message", async (packet) => {
             break;
 
         case "getNewMedia":
+
+            const media = packet.data.accountId !== 'all' ? await worker.instagramAccountManager.find(
+                packet.data.accountId
+            ).newMedias : await worker.instagramAccountManager.getAllAccountNewMedias;
+
             process.send(
                 makeDataSend({
                     success: true,
-                    media: await worker.instagramAccountManager.find(
-                        packet.data.accountId
-                    ).newMedias,
+                    media,
                 })
             );
             break;
