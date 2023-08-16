@@ -290,3 +290,13 @@ pm2.connect((err) => {
  * Get worker instance and run the api server
  */
 ipc.listenMessageFromProcess();
+
+process.on('exit', () => {
+    pm2.stop(processName, (err) => {
+        pm2.disconnect();
+
+        if (err) {
+            throw new Error('Erorr stopping process the worker', {cause: err});
+        }
+    });
+});

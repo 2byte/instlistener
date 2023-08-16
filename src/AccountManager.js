@@ -86,7 +86,7 @@ export default class AccountManager {
         return this.#accounts;
     }
 
-    getAllAccountNewMedias() {
+    get getAllAccountNewMedias() {
         return AccountModel.getAllAccountNewMedias(this.db);
     }
 }
