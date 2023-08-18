@@ -291,12 +291,14 @@ pm2.connect((err) => {
  */
 ipc.listenMessageFromProcess();
 
-process.on('exit', () => {
+process.on('SIGINT', () => {
     pm2.stop(processName, (err) => {
         pm2.disconnect();
 
         if (err) {
             throw new Error('Erorr stopping process the worker', {cause: err});
         }
+
+        process.exit();
     });
 });
