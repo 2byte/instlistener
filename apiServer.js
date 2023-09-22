@@ -18,13 +18,13 @@ const argv = yargs(process.argv.slice(2))
     .option("withoutRunWorker", {
         alias: "s",
         type: "boolean",
-        default: true,
+        default: false,
         describe: "Start the worker",
     })
     .option("withoutRunSelenium", {
         alias: "w",
         type: "boolean",
-        default: true,
+        default: false,
         describe: "Without run selenium",
     })
     .option("h", {

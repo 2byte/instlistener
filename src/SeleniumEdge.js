@@ -15,7 +15,9 @@ export default class SeleniumEage {
     async initSelenium() {
 
         //const opts = new EdgeOptions().setProxy(proxy.manual({http: "5.61.39.81:8888"}))
-        const opts = new EdgeOptions().addArguments('--disable-notifications')
+        const opts = new EdgeOptions()
+            .addArguments('--disable-notifications')
+            .addArguments('--disable-features=msEdgeJSONViewer')
 
         this.#driver = await new Builder()
         .forBrowser("edge")

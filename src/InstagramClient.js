@@ -266,8 +266,10 @@ export default class InstagramClient {
         );
 
         try {
-            //this.log(await this.driver.getPageSource())
+            //this.log((await this.driver.getPageSource()).substring(0, 2000))
+            
             const posts = await this.driver.findElement({tagName: 'pre'}).getText();
+
             return InstagramClient.handleJsonResponseWithPosts(posts);
         } catch (err) {
             this.log(err);

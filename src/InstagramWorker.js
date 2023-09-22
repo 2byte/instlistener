@@ -18,7 +18,7 @@ export default class InstagramWorker {
     /**
      * @type {number}
      */
-    #scanInterval = 10 * 1000 * 60;
+    #scanInterval = 1000 * 60;
 
     timerInterval = null;
 
@@ -79,7 +79,10 @@ export default class InstagramWorker {
 
         const accounts = (await this.#accountManager.loadAccounts()).accounts;
 
+        console.log('accounts.length', accounts.size);
+
         for (const account of accounts.values()) {
+
             if (account.isNew) {
                 const post = await this.#instagramClient.getFirstPost(
                     account.username
@@ -97,11 +100,18 @@ export default class InstagramWorker {
                 account.username,
                 await account.lastMedia.ig_shortcode
             );
-
-            account.addMedias(medias, true);
+            
+            if (medias.length === 0) continue;
+            
+            try {
+                await account.addMedias(medias, true);
+            } catch (err) {
+                console.log('Error adding medias', err);
+            }
 
             this.#stateTickLoop.handledTrackingAccount += 1;
             this.#stateTickLoop.addedMedia += medias.length;
+            
         }
 
         this.#totalStat.countLoop += 1;

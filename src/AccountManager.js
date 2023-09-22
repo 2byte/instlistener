@@ -26,7 +26,9 @@ export default class AccountManager {
         const accounts = await this.db.all("SELECT * FROM `ig_track_accounts` WHERE `status` = 1");
 
         for (let account of accounts) {
-            this.#accounts.set(account.username, AccountModel.make(account, this.db));
+            const accountModel = AccountModel.make(account, this.db);
+
+            this.#accounts.set(account.username, accountModel);
         }
 
         return this;

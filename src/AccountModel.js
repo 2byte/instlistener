@@ -5,6 +5,8 @@ export default class AccountModel {
      */
     #db = null;
 
+    existsMedia = false;
+
     constructor(dataAttributes, db) {
         this.#attributes = dataAttributes;
         this.#db = db;
@@ -59,7 +61,7 @@ export default class AccountModel {
 
     get lastMedia() {
         return this.#db.get(
-            "SELECT * FROM `ig_account_medias` WHERE `is_new`=0 ORDER BY id DESC LIMIT 1"
+            "SELECT * FROM `ig_account_medias` WHERE `account_id`=? ORDER BY `id` DESC LIMIT 1", this.#attributes.id
         );
     }
 
@@ -140,7 +142,7 @@ export default class AccountModel {
 
     update(attributes) {
         return this.#db.run(
-            "UPDATE `ig_account_medias` SET " +
+            "UPDATE `ig_track_accounts` SET " +
                 this.createSqlFields(attributes) +
                 ",`updated_at`=datetime('now')" +
                 " WHERE `id`=?",

@@ -6,11 +6,13 @@ import InstagramWorker from "./src/InstagramWorker.js";
 import AccountManager from "./src/AccountManager.js";
 import SeleniumRunner from "./src/SeleniumRunner.js";
 import SeleniumEage from "./src/SeleniumEdge.js";
+import SeleniumGecko from "./src/SeleniumGecko.js";
 import InstagramClient from "./src/InstagramClient.js";
 import * as dotenv from "dotenv";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import path from "node:path";
+import process from "node:process";
 import yargs from "yargs";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
@@ -36,7 +38,8 @@ const argv = yargs(process.argv.slice(2))
         default: false,
         describe: "Help",
     }).argv;
-console.log('xxx start worer', argv.withoutRunWorker, argv.withoutRunSelenium)
+    
+console.log('Starting worker without run worker and selenium', argv.withoutRunWorker, argv.withoutRunSelenium)
 dotenv.config();
 
 const pathToDatabase = path.resolve(currentDirPath + "/database/database.db");
@@ -48,15 +51,27 @@ const db = await open({
     driver: sqlite3.cached.Database,
 });
 
-const initDriver = await SeleniumEage.init(
-    path.resolve("./drivers/edgedriver_win64/msedgedriver.exe")
-);
+db.on('trace', (data) => {
+    console.log(data);
+});
+
+let initDriver = null;
+
+if (process.platform === "win32") {
+    initDriver = await SeleniumEage.init(
+        path.resolve("./drivers/edgedriver_win64/msedgedriver.exe")
+    );
+} else if (process.platform === "linux") {
+    initDriver = await SeleniumGecko.init(
+        path.resolve("./drivers/geckodriver_linux64/geckodriver")
+    );
+}
 
 let instagramClient;
 let seleniumRunner;
 
 if (!argv.withoutRunSelenium) {
-    initDriver.initSelenium();
+    const seleniumDriver = await initDriver.initSelenium();
 
     seleniumRunner = SeleniumRunner.init(seleniumDriver);
 
@@ -71,7 +86,7 @@ const worker = InstagramWorker.init({
     AccountManager: AccountManager.init(db),
     SeleniumRunner: seleniumRunner,
     InstagramClient: instagramClient,
-    scanInterval: process.env.SCAN_INTERVAL,
+    scanInterval: (process.env.SCAN_INTERVAL ?? 1) * 1000 * 60,
     limitLoop: process.env.LIMIT_LOOP,
 });
 

@@ -16,7 +16,7 @@ CREATE TRIGGER ac_updating_time_updated_at
 AFTER UPDATE ON ig_track_accounts
 FOR EACH ROW
 BEGIN
-  UPDATE ig_track_accounts SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+  UPDATE ig_track_accounts SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id AND updated_at != CURRENT_TIMESTAMP;
 END;
 
 
@@ -39,7 +39,7 @@ CREATE TRIGGER media_updating_time_updated_at
 AFTER UPDATE ON ig_account_medias
 FOR EACH ROW
 BEGIN
-  UPDATE ig_account_medias SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+  UPDATE ig_account_medias SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id AND updated_at != CURRENT_TIMESTAMP;
 END;
 -----------------------------------------------------------
 -- DOWN
