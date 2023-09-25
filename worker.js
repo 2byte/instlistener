@@ -38,7 +38,7 @@ const argv = yargs(process.argv.slice(2))
         default: false,
         describe: "Help",
     }).argv;
-    
+
 console.log('Starting worker without run worker and selenium', argv.withoutRunWorker, argv.withoutRunSelenium)
 dotenv.config();
 
@@ -86,7 +86,7 @@ const worker = InstagramWorker.init({
     AccountManager: AccountManager.init(db),
     SeleniumRunner: seleniumRunner,
     InstagramClient: instagramClient,
-    scanInterval: (process.env.SCAN_INTERVAL ?? 1) * 1000 * 60,
+    scanInterval: ((process.env.SCAN_INTERVAL ?? 1) * 1000) * 60,
     limitLoop: process.env.LIMIT_LOOP,
 });
 

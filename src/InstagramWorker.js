@@ -102,7 +102,7 @@ export default class InstagramWorker {
             );
             
             if (medias.length === 0) continue;
-            
+
             try {
                 await account.addMedias(medias, true);
             } catch (err) {
