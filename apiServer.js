@@ -68,6 +68,7 @@ const ipc = new (class IPCWorker {
                 },
                 (err, res) => {
                     if (err) {
+                        console.error(err);
                         reject(err);
                     }
 
@@ -279,7 +280,6 @@ pm2.connect((err) => {
                 if (err) {
                     return console.error(err);
                 }
-
                 runApiServer(process.pm2_env.pm_id);
             });
         }

@@ -90,21 +90,7 @@ const worker = InstagramWorker.init({
     limitLoop: process.env.LIMIT_LOOP,
 });
 
-if (!argv.withoutRunWorker) {
-    await worker.run(() => {
-        console.log("Worked 1 loop");
-        console.log(worker.statTickLoop);
-    });
-
-    console.log("Worker is started");
-}
-
-process.on("exit", async () => {
-    await worker?.stop();
-    await db.close();
-    console.log("Worker is stopped");
-});
-
+// Api beetween worker and apiServer
 process.on("message", async (packet) => {
     console.log("on message", packet);
 
@@ -225,4 +211,19 @@ process.on("message", async (packet) => {
             process.send(makeDataSend({ success: true }));
             break;
     }
+});
+
+if (!argv.withoutRunWorker) {
+    await worker.run(() => {
+        console.log("Worked 1 loop");
+        console.log(worker.statTickLoop);
+    });
+
+    console.log("Worker is started");
+}
+
+process.on("exit", async () => {
+    await worker?.stop();
+    await db.close();
+    console.log("Worker is stopped");
 });
