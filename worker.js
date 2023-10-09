@@ -51,9 +51,11 @@ const db = await open({
     driver: sqlite3.cached.Database,
 });
 
-db.on('trace', (data) => {
-    console.log(data);
-});
+if (process.env.ENABLED_SQLITE_TRACE === 'true') {
+    db.on('trace', (data) => {
+        console.log(data);
+    });
+}
 
 let initDriver = null;
 
@@ -215,7 +217,7 @@ process.on("message", async (packet) => {
 
 if (!argv.withoutRunWorker) {
     await worker.run(() => {
-        console.log("Worked 1 loop");
+        console.log("Worked 1 loop ", new Date().toLocaleTimeString());
         console.log(worker.statTickLoop);
     });
 
