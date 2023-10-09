@@ -131,12 +131,14 @@ export default class InstagramWorker {
         this.#scanLoopIsRunned = false;
 
         return new Promise((resolve, reject) => {
-            this.timerInterval = setInterval(async () => {
-                if (!this.#scanLoopIsRunned) {
-                    await this.scanLoop(cbEndTick);
-                    resolve();
-                }
-            }, this.#scanInterval);
+            if (!this.timerInterval) {
+                this.timerInterval = setInterval(async () => {
+                    if (!this.#scanLoopIsRunned) {
+                        await this.scanLoop(cbEndTick);
+                        resolve();
+                    }
+                }, this.#scanInterval);
+            }
         });
     }
 
