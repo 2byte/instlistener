@@ -176,7 +176,13 @@ export default class AccountModel {
         return this.#attributes;
     }
 
-    static getAllAccountNewMedias(db) {
-        return db.all('SELECT * FROM `ig_account_medias` WHERE `is_new`=1 ORDER BY id ASC');
+    static async getAllAccountNewMedias(db) {
+        const accountMedias = await db.all(
+            "SELECT * FROM `ig_account_medias` WHERE `is_new`=1 ORDER BY id ASC"
+        );
+        
+        await db.run("UPDATE `ig_account_medias` SET `is_new`=0 WHERE `is_new`=1");
+        
+        return accountMedias;
     }
 }
