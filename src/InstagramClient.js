@@ -282,7 +282,10 @@ export default class InstagramClient {
             const posts = await this.getPostsByUser(igUsername);
 
 
-            const indexByShortcode = posts.findIndex((post, i) => post.shortcode === lastShortcode);
+            const indexByShortcode = posts.findIndex((post, i) => {
+                //console.log('Equal shortcode', post.shortcode, lastShortcode)
+                return post.shortcode === lastShortcode
+            });
 
             if (indexByShortcode === -1) {
                 return [];
