@@ -216,7 +216,7 @@ process.on("message", async (packet) => {
 });
 
 if (!argv.withoutRunWorker) {
-    await worker.run(() => {
+    worker.run(() => {
         console.log("Worked 1 loop ", new Date().toLocaleTimeString());
         console.log(worker.statTickLoop);
     });

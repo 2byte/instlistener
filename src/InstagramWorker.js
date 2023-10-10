@@ -84,6 +84,14 @@ export default class InstagramWorker {
         for (const account of accounts.values()) {
 
             if (account.isNew) {
+                try {
+                    const post = await this.#instagramClient.getFirstPost(
+                        account.username
+                    );
+                } catch (err) {
+                    console.error(err);
+                }
+
                 const post = await this.#instagramClient.getFirstPost(
                     account.username
                 );
