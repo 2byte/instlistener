@@ -272,20 +272,26 @@ export default class InstagramClient {
 
             return InstagramClient.handleJsonResponseWithPosts(posts);
         } catch (err) {
-            this.log(err);
-            throw new Error("Error parse posts user " + username);
+            //this.log(err);
+            throw new Error("Error parse posts user " + username, {cause: err});
         }
     }
 
     async getNewPosts(igUsername, lastShortcode) {
-        const posts = await this.getPostsByUser(igUsername);
-        const indexByShortcode = posts.findIndex((post, i) => post.shortcode === lastShortcode);
+        try {
+            const posts = await this.getPostsByUser(igUsername);
 
-        if (indexByShortcode === -1) {
-            return [];
+
+            const indexByShortcode = posts.findIndex((post, i) => post.shortcode === lastShortcode);
+
+            if (indexByShortcode === -1) {
+                return [];
+            }
+
+            return posts.slice(0, indexByShortcode).reverse();
+        } catch (err) {
+            throw new Error(`Error getNewPosts username ${igUsername}`, {cause: err});
         }
-
-        return posts.slice(0, indexByShortcode).reverse();
     }
 
     async getFirstPost(igUsername) {
@@ -305,7 +311,7 @@ export default class InstagramClient {
             return postsEdges.map((edge) => {
                 return {
                     shortcode: edge.node.shortcode,
-                    caption: edge.node.edge_media_to_caption.edges[0].node.text,
+                    caption: edge.node.edge_media_to_caption.edges?.[0]?.node?.text,
                     display_url: edge.node.display_url,
                     thumbnail_url: edge.node.thumbnail_src,
                     likes: edge.node.edge_liked_by.count,
