@@ -104,21 +104,26 @@ export default class InstagramWorker {
                 continue;
             }
 
-            const medias = await this.#instagramClient.getNewPosts(
-                account.username,
-                await account.lastMedia.ig_shortcode
-            );
-            
-            if (medias.length === 0) continue;
-
             try {
-                await account.addMedias(medias, true);
+                const medias = await this.#instagramClient.getNewPosts(
+                    account.username,
+                    await (account.lastMedia).ig_shortcode
+                );
+                //console.log('medias ', medias, account.username, (await account.lastMedia).ig_shortcode);
+                if (medias.length === 0) continue;
+
+                try {
+                    await account.addMedias(medias, true);
+                } catch (err) {
+                    console.error('Error adding medias', err);
+                }
+
+                this.#stateTickLoop.addedMedia += medias.length;
             } catch (err) {
-                console.log('Error adding medias', err);
+                console.error(`Error getting new posts to loop ${account.username}`, err)
             }
 
             this.#stateTickLoop.handledTrackingAccount += 1;
-            this.#stateTickLoop.addedMedia += medias.length;
             
         }
 
