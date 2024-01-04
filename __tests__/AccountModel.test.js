@@ -11,7 +11,7 @@ describe("AccountModel", () => {
 
         const db = await db_connection;
 
-        const result = await AccountModel.createTestAccounts(db);
+        /*const result = await AccountModel.createTestAccounts(db);
 
         const accounts = (await AccountManager.init(db).loadAccounts()).accounts;
         const account = accounts.get(accounts.keys().next().value);
@@ -19,7 +19,9 @@ describe("AccountModel", () => {
         const media = InstagramClient.handleJsonResponseWithPosts(
             readFileSync(__dirname +'/results/posts1.json')
         ).slice(0, 2);
-        
-        await account.addMedia(media);
+
+        const resultAddingMedia = await account.addMedia(media);*/
+
+        console.log(await db.get('SELECT COUNT(*) AS `exists` FROM ig_track_accounts WHERE id=610'));
     });
 });

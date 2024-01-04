@@ -2,3 +2,4 @@ node_modules/
 timer.js
 timer_data.json
 .env
+log.txt

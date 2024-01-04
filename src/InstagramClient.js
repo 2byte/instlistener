@@ -6,6 +6,7 @@ import {
     access,
     constants,
     mkdir,
+    link,
 } from "node:fs";
 import path from "node:path";
 
@@ -260,6 +261,49 @@ export default class InstagramClient {
         return !this.failAuth;
     }
 
+    async parsePostsByUser(username) {
+        //_aabd _aa8k  _al3l
+
+        const sourcePage = await this.driver.get(
+            "https://www.instagram.com/" + username
+        );
+
+        try {
+            await this.driver.wait(until.elementLocated({css: '._aabd'}));
+
+            const elementPosts = await this.driver.findElements({css: '._aabd'})
+
+            const posts = [];
+
+            for (const element of elementPosts) {
+                const linkElem = await element.findElement({css: 'a.x1i10hfl.xjbqb8w.x6umtig'});
+                const hrefSegments = (await linkElem.getAttribute('href')).split('/');
+                const imgElement = await element.findElement({css: 'img.x5yr21d'});
+                const displayUrl = await imgElement.getAttribute('src');
+                const caption = await imgElement.getAttribute('alt');
+                let type = null;
+
+                try {
+                    type = await linkElem.findElement({css: '._aatp svg'}).getAttribute('aria-label');
+                } catch (err) {
+
+                }
+
+                posts.push({
+                    display_url: await linkElem.getAttribute('href'),
+                    thumbnail_url: displayUrl,
+                    shortcode: hrefSegments[hrefSegments.length - 2],
+                    caption,
+                    is_video: type === 'Клип',
+                })
+            }
+
+            return posts;
+        } catch (err) {
+            throw new Error("Error parse posts user " + username, {cause: err});
+        }
+    }
+
     async getPostsByUser(username) {
         const sourcePosts = await this.driver.get(
             "https://www.instagram.com/" + username + "/?__a=1&__d=1"
@@ -267,7 +311,7 @@ export default class InstagramClient {
 
         try {
             //this.log((await this.driver.getPageSource()).substring(0, 2000))
-            
+
             const posts = await this.driver.findElement({tagName: 'pre'}).getText();
 
             return InstagramClient.handleJsonResponseWithPosts(posts);
@@ -279,8 +323,7 @@ export default class InstagramClient {
 
     async getNewPosts(igUsername, lastShortcode) {
         try {
-            const posts = await this.getPostsByUser(igUsername);
-
+            const posts = await this.parsePostsByUser(igUsername);
 
             const indexByShortcode = posts.findIndex((post, i) => {
                 //console.log('Equal shortcode', post.shortcode, lastShortcode)
@@ -288,7 +331,7 @@ export default class InstagramClient {
             });
 
             if (indexByShortcode === -1) {
-                return [];
+                return posts[0];
             }
 
             return posts.slice(0, indexByShortcode).reverse();
@@ -298,7 +341,7 @@ export default class InstagramClient {
     }
 
     async getFirstPost(igUsername) {
-        return (await this.getPostsByUser(igUsername))[0];
+        return (await this.parsePostsByUser(igUsername))[0];
     }
 
     static handleJsonResponseWithPosts(data) {

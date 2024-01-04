@@ -1,19 +1,18 @@
-import { describe, it, beforeAll, expect, afterAll } from "vitest";
-import InstagramWorker from "../src/InstagramWorker";
+import { describe, it, beforeAll, expect, afterAll } from 'vitest';
+import InstagramWorker from '../src/InstagramWorker';
 import dbConnection from '../src/db_connection';
-import AccountManager from "../src/AccountManager";
-import SeleniumRunner from "../src/SeleniumRunner";
-import SeleniumEage from "../src/SeleniumEdge";
-import path from "node:path";
-import InstagramClient from "../src/InstagramClient";
-import {config} from "dotenv";
+import AccountManager from '../src/AccountManager';
+import SeleniumRunner from '../src/SeleniumRunner';
+import SeleniumEage from '../src/SeleniumEdge';
+import path from 'node:path';
+import InstagramClient from '../src/InstagramClient';
+import { config } from 'dotenv';
 
-describe("InstagramWorker", () => {
-
-    const loadEnv = config({ path: path.resolve(__dirname, '../../.env') });
+describe('InstagramWorker', () => {
+    const loadEnv = config({ path: path.resolve(__dirname, '../.env') });
 
     if (loadEnv.error) {
-        throw new Error("Failed to load .env file", { cause: loadEnv.error });
+        throw new Error('Failed to load .env file', { cause: loadEnv.error });
     }
 
     let db = null;
@@ -22,21 +21,28 @@ describe("InstagramWorker", () => {
     beforeAll(async () => {
         db = await dbConnection;
 
-        const accounts = [
-            'razgar.moscow',
-            'rm_motivator',
-            'pj_murano'
-        ];
+        await db.exec('DELETE FROM `ig_track_accounts`');
+        await db.exec('DELETE FROM `ig_account_medias`');
 
-        const sqlFieldValues = accounts.map((account) => {
-            return `(?, ?, ?, date('now'), date('now', '+7 days'))`
-        }).join(',');
+        const accounts = ['razgar.moscow', 'rm_motivator', 'pj_murano'];
 
-        const values = accounts.map((account) => {
-            return [account, 1, 1]
-        }).flat();
-        
-        await db.run('INSERT INTO `ig_track_accounts` (`username`, `status`, `is_new`, `created_at`, `tracking_end_date`) VALUES ' + sqlFieldValues, values)
+        const sqlFieldValues = accounts
+            .map((account) => {
+                return `(?, ?, ?, date('now'), date('now', '+7 days'))`;
+            })
+            .join(',');
+
+        const values = accounts
+            .map((account) => {
+                return [account, 1, 1];
+            })
+            .flat();
+
+        await db.run(
+            'INSERT INTO `ig_track_accounts` (`username`, `status`, `is_new`, `created_at`, `tracking_end_date`) VALUES ' +
+                sqlFieldValues,
+            values
+        );
     });
 
     afterAll(async () => {
@@ -45,39 +51,43 @@ describe("InstagramWorker", () => {
         //await instWorker?.stop();
     });
 
-    it("Get started InstagramWorker", async () => {
+    it('Get started InstagramWorker', async () => {
         const db = await dbConnection;
 
-        const seleniumDriver = await SeleniumEage.init(path.resolve(
-            __dirname,
-            "../drivers/edgedriver_win64/msedgedriver.exe"
-        )).initSelenium();
+        const seleniumDriver = await SeleniumEage.init(
+            path.resolve(
+                __dirname,
+                '../drivers/edgedriver_win64/msedgedriver.exe'
+            )
+        ).initSelenium();
 
-        const seleniumRunner = SeleniumRunner.init(
-            seleniumDriver
-        )
+        const seleniumRunner = SeleniumRunner.init(seleniumDriver);
 
-        const instagramClient = await InstagramClient
-            .init(seleniumDriver)
+        const instagramClient = await InstagramClient.init(seleniumDriver)
             .setCookieStoragePath(path.resolve(__dirname, './cookies'))
             .useSession();
 
         await instagramClient.login(process.env.IG_LOGIN, process.env.IG_PASS);
-        
+
+        const scanIntervalBetween =
+            process.env.SCAN_INTERVAL_BETWEEN_ACCOUNT.includes(',')
+                ? process.env.SCAN_INTERVAL_BETWEEN_ACCOUNT.split(',')
+                : [process.env.SCAN_INTERVAL_BETWEEN_ACCOUNT];
+
         const worker = InstagramWorker.init({
             AccountManager: AccountManager.init(db),
             SeleniumRunner: seleniumRunner,
             InstagramClient: instagramClient,
             scanInterval: 1000,
+            scanIntervalBetween,
             limitLoop: 2,
         });
 
         instWorker = worker;
 
         await worker.run(() => {
-            console.log('Worked 1 loop')
-            console.log(worker.statTickLoop)
+            console.log('Worked 1 loop');
+            console.log(worker.stateTickLoop);
         });
-
     }, 60000);
-})
+});

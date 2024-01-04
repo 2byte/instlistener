@@ -102,7 +102,7 @@ export default class AccountModel {
             .flat();
 
         return this.#db.run(
-            "INSERT INTO `ig_account_medias` (`account_id`, `ig_shortcode`, `url`, `caption`, `thumbnail_url`, `is_video`, `is_new`, `created_at`) VALUES " +
+            "INSERT OR IGNORE INTO `ig_account_medias` (`account_id`, `ig_shortcode`, `url`, `caption`, `thumbnail_url`, `is_video`, `is_new`, `created_at`) VALUES " +
                 createSqlPostValueFields(medias),
             values
         );
@@ -180,9 +180,9 @@ export default class AccountModel {
         const accountMedias = await db.all(
             "SELECT * FROM `ig_account_medias` WHERE `is_new`=1 ORDER BY id ASC"
         );
-        
+
         await db.run("UPDATE `ig_account_medias` SET `is_new`=0 WHERE `is_new`=1");
-        
+
         return accountMedias;
     }
 }
