@@ -22,7 +22,7 @@ describe("instagram selenium test", async () => {
                 "../drivers/edgedriver_win64/msedgedriver.exe"
             )
         );
-    
+
         const actionExec = await ActionExecutor.init(
             await seleniumEdge.initSelenium()
         );
@@ -60,4 +60,28 @@ describe("instagram selenium test", async () => {
 
         expect(posts.length).toBeGreaterThan(0);
     }, 40000)
+
+    it('Parse posts by user', async () => {
+
+        //https://instagram.com/razgar.moscow
+        const posts = await instExec.parsePostsByUser("razgar.moscow");
+
+        console.log(posts);
+
+        try {
+            accessSync(__dirname + "/results", constants.W_OK)
+        } catch (err) {
+            if (err.code === "ENOENT") {
+                mkdirSync(__dirname + "/results");
+            } else {
+                throw err;
+            }
+        }
+
+        //writeFileSync(__dirname +'/results/parsed_posts.json', posts);
+
+        expect(posts.length).toBeGreaterThan(0);
+    }, 40000)
+
+
 });

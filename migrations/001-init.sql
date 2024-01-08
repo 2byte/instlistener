@@ -23,9 +23,9 @@ END;
 CREATE TABLE IF NOT EXISTS `ig_account_medias` (
     `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT,
     `account_id` int(11) NOT NULL,
-    `ig_shortcode` varchar(100) NOT NULL,
+    `ig_shortcode` varchar(100) NOT NULL UNIQUE,
     `url` varchar(255) NOT NULL,
-    `caption` varchar(255) NULL,
+    `caption` varchar(10000) NULL,
     `thumbnail_url` varchar(255) NULL,
     `is_video` tinyint(1) NOT NULL DEFAULT '0',
     `is_new` tinyint(1) NOT NULL DEFAULT '0',

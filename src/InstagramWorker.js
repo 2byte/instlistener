@@ -20,9 +20,16 @@ export default class InstagramWorker {
      */
     #scanInterval = 1000 * 60;
 
-    timerInterval = null;
+    /**
+     * @type {Array.<number>}
+     */
+    #scanIntervalBetween = [0];
 
-    #stateTickLoop = {};
+    #stateTickLoop = {
+        addedMedia: 0,
+        handledNewAccount: 0,
+        handledTrackingAccount: 0,
+    };
 
     #limitLoop = 0;
 
@@ -44,11 +51,13 @@ export default class InstagramWorker {
         AccountManager,
         InstagramClient,
         scanInterval,
+        scanIntervalBetween,
         limitLoop,
     }) {
         this.#seleniumRunner = SeleniumRunner;
         this.#accountManager = AccountManager;
         this.#scanInterval = scanInterval;
+        this.#scanIntervalBetween = (scanIntervalBetween ? scanIntervalBetween * 1000 : 0);
         this.#instagramClient = InstagramClient;
         this.#limitLoop = limitLoop ?? 0;
     }
@@ -58,6 +67,7 @@ export default class InstagramWorker {
         AccountManager,
         InstagramClient,
         scanInterval = 10 * 1000 * 60,
+        scanIntervalBetween = [0],
         limitLoop = 0,
     }) {
         return new InstagramWorker({
@@ -65,6 +75,7 @@ export default class InstagramWorker {
             AccountManager,
             InstagramClient,
             scanInterval,
+            scanIntervalBetween,
             limitLoop,
         });
     }
@@ -84,17 +95,15 @@ export default class InstagramWorker {
         for (const account of accounts.values()) {
 
             if (account.isNew) {
+                let post = null;
+
                 try {
-                    const post = await this.#instagramClient.getFirstPost(
+                    post = await this.#instagramClient.getFirstPost(
                         account.username
                     );
                 } catch (err) {
-                    console.error(err);
+                    console.error('Error get first post for user ' + account.username, err);
                 }
-
-                const post = await this.#instagramClient.getFirstPost(
-                    account.username
-                );
 
                 account.addMedia(post, false);
                 account.update({ is_new: 0 });
@@ -107,7 +116,7 @@ export default class InstagramWorker {
             try {
                 const medias = await this.#instagramClient.getNewPosts(
                     account.username,
-                    (await account.lastMedia).ig_shortcode
+                    (await account.lastMedia).shortcode
                 );
                 //console.log('medias ', medias, account.username, (await account.lastMedia).ig_shortcode);
                 if (medias.length === 0) continue;
@@ -124,7 +133,18 @@ export default class InstagramWorker {
             }
 
             this.#stateTickLoop.handledTrackingAccount += 1;
-            
+
+            // Sleep between visit accounts page
+            if (this.#scanIntervalBetween[0] || (this.#scanIntervalBetween[0] && this.#scanIntervalBetween?.[1])) {
+                await new Promise(async (resolve, reject) => {
+                    const minInterval = this.#scanIntervalBetween[0] ?? 1;
+                    const maxInterval = this.#scanIntervalBetween[1] ?? 2;
+                    const randomInterval = Math.floor(Math.random() * (maxInterval - minInterval + 1)) + minInterval;
+
+                    setTimeout(resolve, randomInterval);
+                    console.log('Sleep between visit accounts page', randomInterval);
+                });
+            }
         }
 
         this.#totalStat.countLoop += 1;
@@ -143,13 +163,12 @@ export default class InstagramWorker {
 
         this.#scanLoopIsRunned = false;
 
-        return new Promise((resolve, reject) => {
-            if (!this.timerInterval) {
-                this.timerInterval = setInterval(async () => {
-                    if (!this.#scanLoopIsRunned) {
-                        await this.scanLoop(cbEndTick);
-                        resolve();
-                    }
+        return new Promise(async (resolve, reject) => {
+            if (!this.#scanLoopIsRunned) {
+                resolve();
+
+                return setTimeout(async () => {
+                    await this.scanLoop(cbEndTick);
                 }, this.#scanInterval);
             }
         });

@@ -96,13 +96,13 @@ export default class AccountModel {
                     media.caption,
                     media.thumbnail_url,
                     +media.is_video,
-                    isNew,
+                    +isNew,
                 ];
             })
             .flat();
 
         return this.#db.run(
-            "INSERT INTO `ig_account_medias` (`account_id`, `ig_shortcode`, `url`, `caption`, `thumbnail_url`, `is_video`, `is_new`, `created_at`) VALUES " +
+            "INSERT OR IGNORE INTO `ig_account_medias` (`account_id`, `ig_shortcode`, `url`, `caption`, `thumbnail_url`, `is_video`, `is_new`, `created_at`) VALUES " +
                 createSqlPostValueFields(medias),
             values
         );
@@ -115,7 +115,7 @@ export default class AccountModel {
     addMediaFake(isNew) {
         return this.addMedia(
             {
-                shortcode: "fake",
+                shortcode: Math.random().toString(36).substring(2, 10),
                 display_url: "fake",
                 caption: "fake",
                 thumbnail_url: "fake",
@@ -180,9 +180,9 @@ export default class AccountModel {
         const accountMedias = await db.all(
             "SELECT * FROM `ig_account_medias` WHERE `is_new`=1 ORDER BY id ASC"
         );
-        
+
         await db.run("UPDATE `ig_account_medias` SET `is_new`=0 WHERE `is_new`=1");
-        
+
         return accountMedias;
     }
 }
