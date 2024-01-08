@@ -96,7 +96,7 @@ export default class AccountModel {
                     media.caption,
                     media.thumbnail_url,
                     +media.is_video,
-                    isNew,
+                    +isNew,
                 ];
             })
             .flat();
@@ -115,7 +115,7 @@ export default class AccountModel {
     addMediaFake(isNew) {
         return this.addMedia(
             {
-                shortcode: "fake",
+                shortcode: Math.random().toString(36).substring(2, 10),
                 display_url: "fake",
                 caption: "fake",
                 thumbnail_url: "fake",

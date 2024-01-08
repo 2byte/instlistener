@@ -40,7 +40,7 @@ export default class AccountManager {
 
     async getAccount(id) {
         await this.loadAccounts();
-        
+
         return this.find(id)?.attributes;
     }
 
