@@ -88,7 +88,7 @@ if (!argv.withoutRunSelenium) {
     await instagramClient.login(process.env.IG_LOGIN, process.env.IG_PASS);
 }
 
-const scanIntervalBetween = process.env.SCAN_INTERVAL_BETWEEN_ACCOUNT.includes(',')
+const scanIntervalBetween = process.env.SCAN_INTERVAL_BETWEEN_ACCOUNT?.includes(',')
     ? process.env.SCAN_INTERVAL_BETWEEN_ACCOUNT.split(',')
     : [process.env.SCAN_INTERVAL_BETWEEN_ACCOUNT];
 
