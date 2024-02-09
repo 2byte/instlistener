@@ -42,6 +42,8 @@ export default class InstagramWorker {
 
     #scanLoopIsRunned = false;
 
+    #isRestartingSelenium = false;
+
     /**
      * @param {SeleniumRunner} seleniumRunner
      * @param {AccountManager} accountManager
@@ -97,12 +99,19 @@ export default class InstagramWorker {
         for (const account of accounts.values()) {
 
             this.#waitingNewPosts[account.username] = setTimeout(async () => {
-                await this.stop('rate limit waiting new posts for user '+ account.username +' for 2 minutes, attempt restart worker');
-                console.log('Reinit Selenium');
-                await this.#seleniumRunner.reInitSelenium();
-                this.#scanLoopIsRunned = false;
-                this.scanLoop(cbEndTick);
-                console.log('Restarting worker loop');
+                if (!this.#isRestartingSelenium) {
+                    this.#isRestartingSelenium = true;
+
+                    await this.stop('rate limit waiting new posts for user '+ account.username +' for 2 minutes, attempt restart worker');
+                    console.log('Reinit Selenium');
+
+                    this.#instagramClient.setDriver(await this.#seleniumRunner.reInitSelenium());
+                    await this.#instagramClient.relogin();
+
+                    this.#scanLoopIsRunned = false;
+                    this.scanLoop(cbEndTick);
+                    console.log('Restarting worker loop');
+                }
             }, 1000 * 60 * 2);
 
             if (account.isNew) {

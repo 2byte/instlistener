@@ -64,11 +64,11 @@ if (process.env.ENABLED_SQLITE_TRACE === 'true') {
 let initDriver = null;
 
 if (process.platform === 'win32') {
-    initDriver = await SeleniumEage.init(
+    initDriver = SeleniumEage.init(
         path.resolve('./drivers/edgedriver_win64/msedgedriver.exe')
     );
 } else if (process.platform === 'linux') {
-    initDriver = await SeleniumGecko.init(
+    initDriver = SeleniumGecko.init(
         path.resolve('./drivers/geckodriver_linux64/geckodriver')
     );
 }
@@ -81,7 +81,7 @@ if (!argv.withoutRunSelenium) {
 
     seleniumRunner = SeleniumRunner.init(seleniumDriver, initDriver);
 
-    instagramClient = await InstagramClient.init(seleniumDriver)
+    instagramClient = await InstagramClient.init(seleniumRunner.driver)
         .setCookieStoragePath(path.resolve('./cookies'))
         .useSession();
 

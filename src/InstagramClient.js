@@ -30,6 +30,11 @@ export default class InstagramClient {
         return new InstagramClient(driver);
     }
 
+    setDriver(driver) {
+        this.driver = driver;
+        return this;
+    }
+
     async login(login, password) {
         this.username = login;
         this.password = password;
@@ -205,6 +210,10 @@ export default class InstagramClient {
         await doLogin();
 
         return this;
+    }
+
+    relogin() {
+        return this.login(this.username, this.password);
     }
 
     saveCookies() {
