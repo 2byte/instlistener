@@ -103,7 +103,9 @@ const worker = InstagramWorker.init({
 
 // Api beetween worker and apiServer
 process.on('message', async (packet) => {
-    console.log('on message', packet);
+    if (packet.data.command !== 'getNewMedias') {
+        console.log('on message from apiServer', packet);
+    }
 
     const command = packet.data.command;
 

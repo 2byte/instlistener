@@ -12,8 +12,8 @@ export default class SeleniumRunner {
         this.#initDriver = initDriver;
     }
 
-    static init(driver) {
-        return new SeleniumRunner(driver);
+    static init(driver, initDriver) {
+        return new SeleniumRunner(drive, initDriver);
     }
 
     async testConnection() {
