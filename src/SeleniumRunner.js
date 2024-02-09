@@ -5,9 +5,11 @@ export default class SeleniumRunner {
      * @type {WebDriver}
      */
     #driver = null;
+    #initDriver
 
-    constructor(driver) {
+    constructor(driver, initDriver) {
         this.#driver = driver;
+        this.#initDriver = initDriver;
     }
 
     static init(driver) {
@@ -23,6 +25,11 @@ export default class SeleniumRunner {
 
     async stop() {
         return this.#driver.quit();
+    }
+
+    async reInitSelenium() {
+        this.#driver = await this.#initDriver.initSelenium();
+        return this.#driver;
     }
 
     get driver() {
