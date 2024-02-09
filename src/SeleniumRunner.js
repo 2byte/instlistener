@@ -13,7 +13,7 @@ export default class SeleniumRunner {
     }
 
     static init(driver, initDriver) {
-        return new SeleniumRunner(drive, initDriver);
+        return new SeleniumRunner(driver, initDriver);
     }
 
     async testConnection() {
