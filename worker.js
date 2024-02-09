@@ -79,7 +79,7 @@ let seleniumRunner;
 if (!argv.withoutRunSelenium) {
     const seleniumDriver = await initDriver.initSelenium();
 
-    seleniumRunner = SeleniumRunner.init(seleniumDriver);
+    seleniumRunner = SeleniumRunner.init(seleniumDriver, initDriver);
 
     instagramClient = await InstagramClient.init(seleniumDriver)
         .setCookieStoragePath(path.resolve('./cookies'))
