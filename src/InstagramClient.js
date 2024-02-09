@@ -283,7 +283,7 @@ export default class InstagramClient {
 
             for (const element of elementPosts) {
                 const linkElem = await element.findElement({
-                    css: 'a.x1i10hfl.xjbqb8w.x6umtig',
+                    css: 'a.x1i10hfl.xjbqb8w',
                 });
                 const hrefSegments = (
                     await linkElem.getAttribute('href')

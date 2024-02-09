@@ -100,6 +100,7 @@ export default class InstagramWorker {
                 await this.stop('rate limit waiting new posts for user '+ account.username +' for 2 minutes, attempt restart worker');
                 console.log('Reinit Selenium');
                 await this.#seleniumRunner.reInitSelenium();
+                this.#scanLoopIsRunned = false;
                 this.scanLoop(cbEndTick);
                 console.log('Restarting worker loop');
             }, 1000 * 60 * 2);
