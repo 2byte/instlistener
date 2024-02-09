@@ -100,6 +100,7 @@ export default class InstagramWorker {
                 await this.stop('rate limit waiting new posts for user '+ account.username +' for 2 minutes, attempt restart worker');
                 console.log('Reinit Selenium');
                 await this.#seleniumRunner.reInitSelenium();
+                this.scanLoop(cbEndTick);
                 console.log('Restarting worker loop');
             }, 1000 * 60 * 2);
 
@@ -110,10 +111,10 @@ export default class InstagramWorker {
                     post = await this.#instagramClient.getFirstPost(
                         account.username
                     );
-                    clearTimeout(this.#waitingNewPosts[account.username]);
                 } catch (err) {
                     console.error('Error get first post for user ' + account.username, err);
                 }
+                clearTimeout(this.#waitingNewPosts[account.username]);
 
                 account.addMedia(post, false);
                 account.update({ is_new: 0 });
