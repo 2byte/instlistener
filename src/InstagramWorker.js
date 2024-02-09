@@ -25,6 +25,8 @@ export default class InstagramWorker {
      */
     #scanIntervalBetween = [0];
 
+    #waitingNewPosts = [];
+
     #stateTickLoop = {
         addedMedia: 0,
         handledNewAccount: 0,
@@ -94,6 +96,13 @@ export default class InstagramWorker {
 
         for (const account of accounts.values()) {
 
+            this.#waitingNewPosts[account.username] = setTimeout(async () => {
+                await this.stop('rate limit waiting new posts for user '+ account.username +' for 2 minutes, attempt restart worker');
+                console.log('Reinit Selenium');
+                await this.#seleniumRunner.reInitSelenium();
+                console.log('Restarting worker loop');
+            }, 1000 * 60 * 2);
+
             if (account.isNew) {
                 let post = null;
 
@@ -101,6 +110,7 @@ export default class InstagramWorker {
                     post = await this.#instagramClient.getFirstPost(
                         account.username
                     );
+                    clearTimeout(this.#waitingNewPosts[account.username]);
                 } catch (err) {
                     console.error('Error get first post for user ' + account.username, err);
                 }
@@ -118,6 +128,7 @@ export default class InstagramWorker {
                     account.username,
                     (await account.lastMedia).shortcode
                 );
+                clearTimeout(this.#waitingNewPosts[account.username]);
                 //console.log('medias ', medias, account.username, (await account.lastMedia).ig_shortcode);
                 if (medias.length === 0) continue;
 
@@ -178,8 +189,9 @@ export default class InstagramWorker {
         return this.scanLoop(cbEndTick);
     }
 
-    async stop() {
-        clearInterval(this.timerInterval);
+    async stop(msg) {
+        if (msg) console.log('Stopped InstagramWorker ', msg);
+        this.#scanLoopIsRunned = true;
         return this.#seleniumRunner.stop();
     }
 

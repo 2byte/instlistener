@@ -1,4 +1,4 @@
-import { until, By } from "selenium-webdriver";
+import { until, By } from 'selenium-webdriver';
 import {
     readFileSync,
     writeFileSync,
@@ -7,12 +7,12 @@ import {
     constants,
     mkdir,
     link,
-} from "node:fs";
-import path from "node:path";
+} from 'node:fs';
+import path from 'node:path';
 
 export default class InstagramClient {
     rememberUser = false;
-    dirCookies = "./cookies/";
+    dirCookies = './cookies/';
     pathFileCookies = null;
     username = null;
     password = null;
@@ -36,12 +36,12 @@ export default class InstagramClient {
 
         this.pathFileCookies = path.resolve(
             this.dirCookies,
-            this.username + ".json"
+            this.username + '.json'
         );
 
         const doLogin = async () => {
-            await this.driver.get("https://www.instagram.com");
-            await this.driver.wait(until.elementLocated(By.css("main")), 10000);
+            await this.driver.get('https://www.instagram.com');
+            await this.driver.wait(until.elementLocated(By.css('main')), 10000);
 
             await this.driver
                 .wait(
@@ -51,26 +51,30 @@ export default class InstagramClient {
                     20000
                 )
                 .then((elem) => {
-                    this.log("Accept all cookie found");
+                    this.log('Accept all cookie found');
                     return elem.click().then(() => {
                         return this.saveCookies();
                     });
                 })
                 .catch((err) => {
-                    this.log("Accept all cookie not found");
+                    this.log('Accept all cookie not found');
                 });
 
-            await this.driver
-                .findElement({ css: 'input[name="username"]' })
-                .sendKeys(login);
-            await this.driver
-                .findElement({ css: 'input[name="password"]' })
-                .sendKeys(password);
+            try {
+                await this.driver
+                    .findElement({ css: 'input[name="username"]' })
+                    .sendKeys(login);
+                await this.driver
+                    .findElement({ css: 'input[name="password"]' })
+                    .sendKeys(password);
+            } catch (err) {
+                console.log('Inputs for login not found');
+            }
 
             return this.driver
                 .findElement({ css: 'button[type="submit"]' })
                 .then((el) => {
-                    console.log("Click button submit for login");
+                    console.log('Click button submit for login');
 
                     return el
                         .click()
@@ -78,14 +82,14 @@ export default class InstagramClient {
                             return this.driver
                                 .wait(
                                     until.elementLocated(
-                                        By.css("#slfErrorAlert")
+                                        By.css('#slfErrorAlert')
                                     ),
                                     10000
                                 )
                                 .then((elem) => {
-                                    this.log("Error authentification found");
+                                    this.log('Error authentification found');
                                     let err = new Error(
-                                        "Error authentification"
+                                        'Error authentification'
                                     );
                                     err.code = 401;
 
@@ -98,7 +102,7 @@ export default class InstagramClient {
                                         return err;
                                     }
 
-                                    this.log("Login is successfully");
+                                    this.log('Login is successfully');
                                     return this.driver
                                         .wait(
                                             until.elementLocated(
@@ -108,7 +112,7 @@ export default class InstagramClient {
                                             )
                                         )
                                         .then((formSaveData) => {
-                                            this.log("Form save data found");
+                                            this.log('Form save data found');
                                             return this.driver
                                                 .findElement({
                                                     xpath: '//button[text()="Сохранить данные"]',
@@ -121,14 +125,14 @@ export default class InstagramClient {
                                 });
                         })
                         .catch((err) => {
-                            this.log("Error authentification");
+                            this.log('Error authentification');
                         });
                 })
                 .then(() => {
                     return this.saveCookies();
                 })
                 .catch((err) => {
-                    this.log("Error click button submit for login");
+                    this.log('Error click button submit for login');
                 });
         };
 
@@ -141,7 +145,7 @@ export default class InstagramClient {
                     10000
                 )
                 .then((elem) => {
-                    this.log("Notification popup found");
+                    this.log('Notification popup found');
 
                     return this.driver
                         .findElement({
@@ -150,14 +154,14 @@ export default class InstagramClient {
                         .click();
                 })
                 .catch((err) => {
-                    this.log("Popup notification not found");
+                    this.log('Popup notification not found');
                 });
         };
 
         if (this.rememberUser) {
-            await this.driver.get("https://www.instagram.com");
+            await this.driver.get('https://www.instagram.com');
 
-            this.log("Remember user");
+            this.log('Remember user');
             this.log(this.getCookiesByUser());
 
             const addCookiesPromise = [];
@@ -165,7 +169,7 @@ export default class InstagramClient {
             const cookiesUser = this.getCookiesByUser();
 
             if (cookiesUser === null) {
-                this.log("Cookie not found, try to login");
+                this.log('Cookie not found, try to login');
                 return doLogin();
             }
 
@@ -179,7 +183,7 @@ export default class InstagramClient {
 
             await Promise.all(addCookiesPromise);
 
-            return this.driver.get("https://www.instagram.com").then((res) => {
+            return this.driver.get('https://www.instagram.com').then((res) => {
                 return this.driver
                     .wait(
                         until.elementLocated(
@@ -188,7 +192,7 @@ export default class InstagramClient {
                         10000
                     )
                     .then(() => {
-                        this.log("Login is successfully");
+                        this.log('Login is successfully');
 
                         return clickSubmitNotification();
                     })
@@ -208,7 +212,7 @@ export default class InstagramClient {
             .manage()
             .getCookies()
             .then((cookies) => {
-                this.log("Saving cookies", JSON.stringify(cookies));
+                this.log('Saving cookies', JSON.stringify(cookies));
                 return writeFileSync(
                     this.pathFileCookies,
                     JSON.stringify(cookies)
@@ -218,12 +222,12 @@ export default class InstagramClient {
 
     getCookiesByUser() {
         try {
-            return JSON.parse(readFileSync(this.pathFileCookies, "utf-8"));
+            return JSON.parse(readFileSync(this.pathFileCookies, 'utf-8'));
         } catch (err) {
-            if (err.code === "ENOENT") {
+            if (err.code === 'ENOENT') {
                 return null;
             }
-            throw new Error("Error parse cookies", { cause: err });
+            throw new Error('Error parse cookies', { cause: err });
         }
     }
 
@@ -265,29 +269,37 @@ export default class InstagramClient {
         //_aabd _aa8k  _al3l
 
         const sourcePage = await this.driver.get(
-            "https://www.instagram.com/" + username
+            'https://www.instagram.com/' + username
         );
 
         try {
-            await this.driver.wait(until.elementLocated({css: '._aabd'}));
+            await this.driver.wait(until.elementLocated({ css: '._aabd' }));
 
-            const elementPosts = await this.driver.findElements({css: '._aabd'})
+            const elementPosts = await this.driver.findElements({
+                css: '._aabd',
+            });
 
             const posts = [];
 
             for (const element of elementPosts) {
-                const linkElem = await element.findElement({css: 'a.x1i10hfl.xjbqb8w.x6umtig'});
-                const hrefSegments = (await linkElem.getAttribute('href')).split('/');
-                const imgElement = await element.findElement({css: 'img.x5yr21d'});
+                const linkElem = await element.findElement({
+                    css: 'a.x1i10hfl.xjbqb8w.x6umtig',
+                });
+                const hrefSegments = (
+                    await linkElem.getAttribute('href')
+                ).split('/');
+                const imgElement = await element.findElement({
+                    css: 'img.x5yr21d',
+                });
                 const displayUrl = await imgElement.getAttribute('src');
                 const caption = await imgElement.getAttribute('alt');
                 let type = null;
 
                 try {
-                    type = await linkElem.findElement({css: '._aatp svg'}).getAttribute('aria-label');
-                } catch (err) {
-
-                }
+                    type = await linkElem
+                        .findElement({ css: '._aatp svg' })
+                        .getAttribute('aria-label');
+                } catch (err) {}
 
                 posts.push({
                     display_url: await linkElem.getAttribute('href'),
@@ -295,29 +307,35 @@ export default class InstagramClient {
                     shortcode: hrefSegments[hrefSegments.length - 2],
                     caption,
                     is_video: type === 'Клип',
-                })
+                });
             }
 
             return posts;
         } catch (err) {
-            throw new Error("Error parse posts user " + username, {cause: err});
+            throw new Error('Error parse posts user ' + username, {
+                cause: err,
+            });
         }
     }
 
     async getPostsByUser(username) {
         const sourcePosts = await this.driver.get(
-            "https://www.instagram.com/" + username + "/?__a=1&__d=1"
+            'https://www.instagram.com/' + username + '/?__a=1&__d=1'
         );
 
         try {
             //this.log((await this.driver.getPageSource()).substring(0, 2000))
 
-            const posts = await this.driver.findElement({tagName: 'pre'}).getText();
+            const posts = await this.driver
+                .findElement({ tagName: 'pre' })
+                .getText();
 
             return InstagramClient.handleJsonResponseWithPosts(posts);
         } catch (err) {
             //this.log(err);
-            throw new Error("Error parse posts user " + username, {cause: err});
+            throw new Error('Error parse posts user ' + username, {
+                cause: err,
+            });
         }
     }
 
@@ -327,7 +345,7 @@ export default class InstagramClient {
 
             const indexByShortcode = posts.findIndex((post, i) => {
                 //console.log('Equal shortcode', post.shortcode, lastShortcode)
-                return post.shortcode === lastShortcode
+                return post.shortcode === lastShortcode;
             });
 
             if (indexByShortcode === -1) {
@@ -336,7 +354,9 @@ export default class InstagramClient {
 
             return posts.slice(0, indexByShortcode).reverse();
         } catch (err) {
-            throw new Error(`Error getNewPosts username ${igUsername}`, {cause: err});
+            throw new Error(`Error getNewPosts username ${igUsername}`, {
+                cause: err,
+            });
         }
     }
 
@@ -348,7 +368,8 @@ export default class InstagramClient {
         try {
             const responseData = JSON.parse(data);
 
-            const postsEdges = responseData.graphql.user.edge_owner_to_timeline_media.edges;
+            const postsEdges =
+                responseData.graphql.user.edge_owner_to_timeline_media.edges;
 
             if (postsEdges.length === 0) {
                 return [];
@@ -357,15 +378,16 @@ export default class InstagramClient {
             return postsEdges.map((edge) => {
                 return {
                     shortcode: edge.node.shortcode,
-                    caption: edge.node.edge_media_to_caption.edges?.[0]?.node?.text,
+                    caption:
+                        edge.node.edge_media_to_caption.edges?.[0]?.node?.text,
                     display_url: edge.node.display_url,
                     thumbnail_url: edge.node.thumbnail_src,
                     likes: edge.node.edge_liked_by.count,
                     is_video: edge.node.is_video,
-                }
+                };
             });
         } catch (err) {
-            throw new Error("Error parse posts", {cause: err});
+            throw new Error('Error parse posts', { cause: err });
         }
     }
 
