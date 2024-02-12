@@ -52,7 +52,7 @@ sqlite3.verbose();
 
 const db = await open({
     filename: pathToDatabase,
-    driver: sqlite3.cached.Database,
+    driver: sqlite3.Database,
 });
 
 if (process.env.ENABLED_SQLITE_TRACE === 'true') {
