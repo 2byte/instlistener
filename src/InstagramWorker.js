@@ -121,17 +121,19 @@ export default class InstagramWorker {
                     post = await this.#instagramClient.getFirstPost(
                         account.username
                     );
+
+                    clearTimeout(this.#waitingNewPosts[account.username]);
+
+                    account.addMedia(post, false);
+                    account.update({ is_new: 0 });
+
+                    this.#stateTickLoop.handledNewAccount += 1;
+                    this.#stateTickLoop.addedMedia += 1;
+                    continue;
                 } catch (err) {
                     console.error('Error get first post for user ' + account.username, err);
                 }
-                clearTimeout(this.#waitingNewPosts[account.username]);
 
-                account.addMedia(post, false);
-                account.update({ is_new: 0 });
-
-                this.#stateTickLoop.handledNewAccount += 1;
-                this.#stateTickLoop.addedMedia += 1;
-                continue;
             }
 
             try {
