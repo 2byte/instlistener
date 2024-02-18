@@ -45,6 +45,7 @@ export default class InstagramWorker {
 
     #isRestartingSelenium = false;
     #isPause = false;
+    #cbEndTick = null;
 
     /**
      * @param {SeleniumRunner} seleniumRunner
@@ -124,16 +125,18 @@ export default class InstagramWorker {
         }, 1000 * 60 * 2);
     }
 
-    async restartWorker() {
+    restartWorker(username) {
         return setTimeout(async () => {
+            console.log('Restart selenium with username', username);
+
             if (!this.#isRestartingSelenium) {
-                pm2.connect(function (err) {
+                this.#isRestartingSelenium = true;
+
+                pm2.connect((err) => {
                     if (err) {
                         console.error(err)
                         process.exit(2)
                     }
-
-                    this.#isRestartingSelenium = true;
 
                     pm2.restart('instagramWorker', (err) => {
                         if (err) {
@@ -149,7 +152,21 @@ export default class InstagramWorker {
         }, 1000 * 60 * 2);
     }
 
+    doPauseLoop(time = 60 * 1000 * 20, force = false) {
+        if (!this.#isPause || force) {
+            this.#isPause = true;
+
+            setTimeout(() => {
+                this.#isPause = false;
+                console.log('Continues a work scanLoop');
+
+                this.scanLoop(this.#cbEndTick);
+            }, time)
+        }
+    }
+
     async scanLoop(cbEndTick) {
+        this.#cbEndTick = cbEndTick;
         this.#scanLoopIsRunned = true;
         this.#stateTickLoop = {
             handledNewAccount: 0,
@@ -163,13 +180,13 @@ export default class InstagramWorker {
 
         for (const account of accounts.values()) {
 
+            await this.delayBetweenVisitAccount();
+
             try {
-                this.#waitingNewPosts[account.username] = this.restartWorker();
+                this.#waitingNewPosts[account.username] = this.restartWorker(account.username);
             } catch (err) {
                 console.log('Error restarting seenium, again attempt restarting', {cause: err});
             }
-
-            await this.delayBetweenVisitAccount();
 
             if (account.isNew) {
                 let post = null;
@@ -198,6 +215,12 @@ export default class InstagramWorker {
                     account.username,
                     (await account.lastMedia).ig_shortcode
                 );
+                if (this.#instagramClient.haveErrorLoadPage() && !this.#isPause) {
+                    clearTimeout(this.#waitingNewPosts[account.username]);
+                    console.log('Error load page. Pause')
+                    this.doPauseLoop();
+                    break;
+                }
                 clearTimeout(this.#waitingNewPosts[account.username]);
                 //console.log('medias ', medias, account.username, (await account.lastMedia).ig_shortcode);
                 if (medias.length === 0) continue;
@@ -210,16 +233,12 @@ export default class InstagramWorker {
                 console.log('Add counter media', this.#stateTickLoop.addedMedia, medias.length)
                 this.#stateTickLoop.addedMedia += medias.length;
             } catch (err) {
-                console.error(`Error getting new posts to loop ${account.username}`, err)
+                console.error(`${new Date()} Error getting new posts to loop ${account.username}`, err)
 
                 if (err?.cause?.message?.includes('stale element reference: stale') || err?.cause?.message?.includes('Waiting for element to be')) {
                     clearTimeout(this.#waitingNewPosts[account.username]);
-                    console.log('Deffering restart loop');
-                    this.#isPause = true;
-                    setTimeout(() => {
-                        this.#isPause = false;
-                    }, 1000 * 60 * 20);
-                    break;
+                    console.log('Deffering restart loop with pause');
+                    this.doPauseLoop();
                 }
             }
 
@@ -249,6 +268,7 @@ export default class InstagramWorker {
                 return setTimeout(async () => {
                     if (this.#isPause) {
                         console.log('Loop on paused');
+                        return;
                     }
                     await this.scanLoop(cbEndTick);
                 }, this.#scanInterval);

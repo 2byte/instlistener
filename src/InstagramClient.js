@@ -21,6 +21,7 @@ export default class InstagramClient {
      * @param {WebDriver} driver
      */
     driver = null;
+    #errorLoadPage = false;
 
     constructor(driver) {
         this.driver = driver;
@@ -277,9 +278,17 @@ export default class InstagramClient {
     async parsePostsByUser(username) {
         //_aabd _aa8k  _al3l
 
+        this.#errorLoadPage = false;
+
         const sourcePage = await this.driver.get(
             'https://www.instagram.com/' + username
         );
+
+
+        if ((await this.driver.getTitle()).includes('Не удалось загрузить')) {
+            this.#errorLoadPage = true;
+            return false;
+        }
 
         try {
             await this.driver.wait(until.elementLocated({ css: '._aabd' }));
@@ -352,6 +361,10 @@ export default class InstagramClient {
         try {
             const posts = await this.parsePostsByUser(igUsername);
 
+            if (posts === false) {
+                return [];
+            }
+
             const indexByShortcode = posts.findIndex((post, i) => {
                 //console.log('Equal shortcode', post.shortcode, lastShortcode)
                 return post.shortcode === lastShortcode;
@@ -398,6 +411,10 @@ export default class InstagramClient {
         } catch (err) {
             throw new Error('Error parse posts', { cause: err });
         }
+    }
+
+    haveErrorLoadPage() {
+        return this.#errorLoadPage;
     }
 
     run() {}
