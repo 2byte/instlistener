@@ -65,6 +65,18 @@ export default class AccountModel {
         );
     }
 
+    get lastMediaPost() {
+        return this.#db.get(
+            "SELECT * FROM `ig_account_medias` WHERE `account_id`=? AND `is_video`!=1 ORDER BY `id` DESC LIMIT 1", this.#attributes.id
+        );
+    }
+    get lastMediaVideo() {
+        
+        return this.#db.get(
+            "SELECT * FROM `ig_account_medias` WHERE `account_id`=? AND `is_video`=1 ORDER BY `id` DESC LIMIT 1", this.#attributes.id
+        );
+    }
+
     get isNew() {
         return this.#attributes.is_new === 1;
     }
@@ -130,6 +142,13 @@ export default class AccountModel {
             "DELETE FROM `ig_account_medias` WHERE `account_id`=?",
             [this.#attributes.id]
         );
+    }
+
+    async isPostExists(shortcode) {
+        return (await this.#db.get(
+            "SELECT * FROM `ig_account_medias` WHERE `ig_shortcode`=? AND `account_id`=?",
+            [shortcode, this.#attributes.id]
+        )) !== null;
     }
 
     createSqlFields(attributes) {

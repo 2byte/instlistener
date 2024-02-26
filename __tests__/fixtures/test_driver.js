@@ -10,7 +10,9 @@ const seleniumEdge = SeleniumEdge.init(
 );
 
 export default async () => {
+    const driver = await seleniumEdge.initSelenium();
+
     return SeleniumRunner.init(
-        await seleniumEdge.initSelenium()
+        driver, seleniumEdge
     );
 }
