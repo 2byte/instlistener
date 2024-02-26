@@ -446,15 +446,14 @@ export default class InstagramClient {
 
     async getPosts(igUsername) {
 
-        const freshPosts = {
+        const publics = {
             posts: [],
             video: [],
         };
 
         // Parse posts
         try {
-            const posts = await this.parsePostsByUser(igUsername);
-            freshPosts.posts = getFreshPosts(posts, lastShortcode);
+            publics.posts = await this.parsePostsByUser(igUsername);
         } catch (err) {
             throw new Error(`Error getNewPosts username ${igUsername}`, {
                 cause: err,
@@ -465,16 +464,14 @@ export default class InstagramClient {
         try {
             await this.driver.findElement({ css: 'a[href$="'+ igUsername +'/reels/"]' }).click();
             await new Promise((resolve) => setTimeout(resolve, 5000));
-            const videoPosts = await this.parsePostsByUser(igUsername, true, {loadProfile: false});
-
-            freshPosts.video = getFreshPosts(videoPosts, lastShortcodeReel);
+            publics.video = await this.parsePostsByUser(igUsername, true, {loadProfile: false});
         } catch (err) {
             throw new Error(`Error parse video getNewPosts username ${igUsername}`, {
                 cause: err,
             });
         }
 
-        return freshPosts;
+        return publics;
     }
 
     async getFirstPost(igUsername) {
