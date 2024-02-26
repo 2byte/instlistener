@@ -467,7 +467,7 @@ export default class InstagramClient {
     }
 
     async getFirstPost(igUsername) {
-        return (await this.parsePostsByUser(igUsername))[0];
+        return (await this.parsePostsByUser(igUsername)).posts[0] ?? null;
     }
 
     static handleJsonResponseWithPosts(data) {

@@ -195,6 +195,7 @@ export default class InstagramWorker {
                     post = await this.#instagramClient.getFirstPost(
                         account.username
                     );
+                    if (post.length === null) continue;
 
                     clearTimeout(this.#waitingNewPosts[account.username]);
 
@@ -217,7 +218,7 @@ export default class InstagramWorker {
                 );
 
                 video.forEach((v) => v.is_video = 1);
-                
+
                 const medias = [...posts,...video];
 
                 clearTimeout(this.#waitingNewPosts[account.username]);
