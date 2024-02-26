@@ -3,10 +3,8 @@ import {
     readFileSync,
     writeFileSync,
     accessSync,
-    access,
     constants,
     mkdir,
-    link,
 } from 'node:fs';
 import path from 'node:path';
 
@@ -21,6 +19,7 @@ export default class InstagramClient {
      * @param {WebDriver} driver
      */
     driver = null;
+    #errorLoadPage = false;
 
     constructor(driver) {
         this.driver = driver;
@@ -283,6 +282,12 @@ export default class InstagramClient {
             );
         }
 
+
+        if ((await this.driver.getTitle()).includes('Не удалось загрузить')) {
+            this.#errorLoadPage = true;
+            return false;
+        }
+
         try {
             let elementPosts = [];
 
@@ -391,9 +396,7 @@ export default class InstagramClient {
         const getFreshPostsNotExistsDb = async (posts) => {
             const queryNotExistsPosts = posts.map((post) => new Promise(async (resolve, reject) => {
                 try {
-                    //console.log('post exists', await accountModel.isPostExists(post.shortcode))
                     const exists = await accountModel.isPostExists(post.shortcode);
-                    console.log(exists);
                     resolve(exists ? null : post)
                 } catch (err) {
                     throw new Error('Error checking posts on exists', {cause: err})
@@ -491,6 +494,10 @@ export default class InstagramClient {
         } catch (err) {
             throw new Error('Error parse posts', { cause: err });
         }
+    }
+
+    haveErrorLoadPage() {
+        return this.#errorLoadPage;
     }
 
     run() {}
