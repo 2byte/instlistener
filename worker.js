@@ -75,17 +75,36 @@ if (process.platform === 'win32') {
 
 let instagramClient;
 let seleniumRunner;
+let seleniumDriver;
 
-if (!argv.withoutRunSelenium) {
-    const seleniumDriver = await initDriver.initSelenium();
+const initInstagramClient = async () => {
+    seleniumDriver = await initDriver.initSelenium();
 
     seleniumRunner = SeleniumRunner.init(seleniumDriver, initDriver);
 
     instagramClient = await InstagramClient.init(seleniumRunner.driver)
         .setCookieStoragePath(path.resolve('./cookies'))
         .useSession();
+};
 
-    await instagramClient.login(process.env.IG_LOGIN, process.env.IG_PASS);
+const instagramLogin = () => {
+    return instagramClient.login(process.env.IG_LOGIN, process.env.IG_PASS);
+};
+
+if (!argv.withoutRunSelenium) {
+
+    let attemptInitInstagramClient = 3;
+
+    while (attemptInitInstagramClient > 0) {
+        try {
+            await initInstagramClient();
+            await instagramLogin();
+            break;
+        } catch (err) {
+            console.error('Error login, attempt relogin', err);
+        }
+        attemptInitInstagramClient--;
+    }
 }
 
 const scanIntervalBetween = process.env.SCAN_INTERVAL_BETWEEN_ACCOUNT?.includes(',')

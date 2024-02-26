@@ -275,6 +275,17 @@ export default class InstagramClient {
         return !this.failAuth;
     }
 
+    async checkErrorLoadPage() {
+
+        if ((await this.driver.getTitle()).includes('Не удалось загрузить')) {
+            console.log('Error load page. Pause');
+            this.#errorLoadPage = true;
+            return true;
+        }
+
+        return false;
+    }
+
     async parsePostsByUser(username) {
         //_aabd _aa8k  _al3l
 
@@ -285,8 +296,7 @@ export default class InstagramClient {
         );
 
 
-        if ((await this.driver.getTitle()).includes('Не удалось загрузить')) {
-            this.#errorLoadPage = true;
+        if (await this.checkErrorLoadPage()) {
             return false;
         }
 

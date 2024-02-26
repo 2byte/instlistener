@@ -104,29 +104,14 @@ export default class InstagramWorker {
         }
     }
 
-    async autorestartSelenium(account, cbEndTick, cbBeforeRestart) {
-        return setTimeout(async () => {
-            if (!this.#isRestartingSelenium) {
-                cbBeforeRestart();
-
-                this.#isRestartingSelenium = true;
-
-                await this.stop('rate limit waiting new posts for user '+ account.username +' for 2 minutes, attempt restart worker');
-                console.log('Reinit Selenium');
-
-                this.#instagramClient.setDriver(await this.#seleniumRunner.reInitSelenium());
-                await this.#instagramClient.relogin();
-
-                this.#scanLoopIsRunned = false;
-                this.#isRestartingSelenium = false;
-                //this.scanLoop(cbEndTick);
-                console.log('Restarting worker loop');
-            }
-        }, 1000 * 60 * 2);
-    }
-
     restartWorker(username) {
         return setTimeout(async () => {
+            // Check error load page
+            if (await this.#instagramClient.checkErrorLoadPage()) {
+                console.log('Timeout getting posts doing the pause which error load page');
+                return this.doPauseLoop();
+            }
+
             console.log('Restart selenium with username', username);
 
             if (!this.#isRestartingSelenium) {
