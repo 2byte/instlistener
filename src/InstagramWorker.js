@@ -217,6 +217,7 @@ export default class InstagramWorker {
                 );
 
                 video.forEach((v) => v.is_video = 1);
+                
                 const medias = [...posts,...video];
 
                 clearTimeout(this.#waitingNewPosts[account.username]);

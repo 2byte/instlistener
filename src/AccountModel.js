@@ -71,6 +71,7 @@ export default class AccountModel {
         );
     }
     get lastMediaVideo() {
+        
         return this.#db.get(
             "SELECT * FROM `ig_account_medias` WHERE `account_id`=? AND `is_video`=1 ORDER BY `id` DESC LIMIT 1", this.#attributes.id
         );

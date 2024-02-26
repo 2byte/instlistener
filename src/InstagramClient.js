@@ -434,6 +434,7 @@ export default class InstagramClient {
     }
 
     async getPosts(igUsername) {
+
         const freshPosts = {
             posts: [],
             video: [],

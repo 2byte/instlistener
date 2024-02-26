@@ -121,5 +121,6 @@ describe("Instagram Client", () => {
         expect(new2video.video.length).toEqual(2);
         expect(new2video.video[0].shortcode).toEqual('code1');
         expect(new2video.video[1].shortcode).toEqual('code2');
+
     });
 });
