@@ -467,7 +467,9 @@ export default class InstagramClient {
     }
 
     async getFirstPost(igUsername) {
-        return (await this.parsePostsByUser(igUsername)).posts[0] ?? null;
+        const publics = await this.getPosts(igUsername);
+
+        return [publics.posts[0], publics.video[0]].filter((post) => post !== null && post !== undefined);
     }
 
     static handleJsonResponseWithPosts(data) {

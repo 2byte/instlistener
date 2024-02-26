@@ -195,15 +195,16 @@ export default class InstagramWorker {
                     post = await this.#instagramClient.getFirstPost(
                         account.username
                     );
-                    if (post.length === null) continue;
 
                     clearTimeout(this.#waitingNewPosts[account.username]);
+
+                    if (post.length === null) continue;
 
                     account.addMedia(post, false);
                     account.update({ is_new: 0 });
 
-                    this.#stateTickLoop.handledNewAccount += 1;
-                    this.#stateTickLoop.addedMedia += 1;
+                    this.#stateTickLoop.handledNewAccount += post.length;
+                    this.#stateTickLoop.addedMedia += post.length;
                     continue;
                 } catch (err) {
                     console.error('Error get first post for user ' + account.username, err);
@@ -212,10 +213,10 @@ export default class InstagramWorker {
             }
 
             try {
-                const { posts, video } = await this.#instagramClient.getNewPosts(
-                    account.username,
-                    (await account.lastMedia).ig_shortcode
-                );
+                const { posts, video } = await this.#instagramClient.getNewPosts({
+                    accountModel: account,
+                    publics: this.#instagramClient.getPosts(account.username),
+                });
 
                 video.forEach((v) => v.is_video = 1);
 
