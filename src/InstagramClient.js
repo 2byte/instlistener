@@ -274,40 +274,62 @@ export default class InstagramClient {
         return !this.failAuth;
     }
 
-    async parsePostsByUser(username) {
+    async parsePostsByUser(username, parseReel = false, {loadProfile = true} = {}) {
         //_aabd _aa8k  _al3l
 
-        const sourcePage = await this.driver.get(
-            'https://www.instagram.com/' + username
-        );
+        if (loadProfile) {
+            const sourcePage = await this.driver.get(
+                'https://www.instagram.com/' + username
+            );
+        }
 
         try {
-            await this.driver.wait(until.elementLocated({ css: '._aabd' }));
+            let elementPosts = [];
 
-            const elementPosts = await this.driver.findElements({
-                css: '._aabd',
-            });
+            if (!parseReel) {
+                await this.driver.wait(until.elementLocated({ css: '._aabd' }));
+                elementPosts = await this.driver.findElements({
+                    css: '._aabd',
+                });
+            }
+            if (parseReel) {
+                elementPosts = await this.driver.findElements({ css: 'div.x1qjc9v5.x972fbf' });
+            }
 
             const posts = [];
 
             for (const element of elementPosts) {
-                const linkElem = await element.findElement({
-                    css: 'a.x1i10hfl.xjbqb8w',
-                });
+                let linkElem = null;
+                try {
+                    linkElem = await element.findElement({
+                        css: 'a.x1i10hfl.xjbqb8w',
+                    });
+                } catch (err) {
+                    console.log('Error parse link ' + await element.getText());
+                    continue;
+                }
+
                 const hrefSegments = (
                     await linkElem.getAttribute('href')
                 ).split('/');
+
                 const imgElement = await element.findElement({
-                    css: 'img.x5yr21d',
+                    css: parseReel ? '._aag6.x1lvsgvq' : 'img.x5yr21d',
                 });
-                const displayUrl = await imgElement.getAttribute('src');
-                const caption = await imgElement.getAttribute('alt');
-                let type = null;
+
+                let caption = '';
+                let displayUrl = '';
+                if (parseReel) {
+                    displayUrl = (await imgElement.getAttribute('style')).match(/url\("(.+)"\)/)[1];
+                } else {
+                    displayUrl = await imgElement.getAttribute('src');
+                    caption = await imgElement.getAttribute('alt');
+                }
+
+                let is_attached = false;
 
                 try {
-                    type = await linkElem
-                        .findElement({ css: '._aatp svg' })
-                        .getAttribute('aria-label');
+                    is_attached = await linkElem.findElement({ css: 'svg[aria-label="Значок прикрепленной публикации"]' }).isDisplayed();
                 } catch (err) {}
 
                 posts.push({
@@ -315,7 +337,7 @@ export default class InstagramClient {
                     thumbnail_url: displayUrl,
                     shortcode: hrefSegments[hrefSegments.length - 2],
                     caption,
-                    is_video: type === 'Клип',
+                    is_attached,
                 });
             }
 
@@ -348,25 +370,96 @@ export default class InstagramClient {
         }
     }
 
-    async getNewPosts(igUsername, lastShortcode) {
-        try {
-            const posts = await this.parsePostsByUser(igUsername);
+    async getNewPosts({
+        accountModel,
+        publics
+    }) {
+        const {posts, video} = publics;
 
+        const getFreshPosts = (posts, lastShortcode) => {
             const indexByShortcode = posts.findIndex((post, i) => {
-                //console.log('Equal shortcode', post.shortcode, lastShortcode)
                 return post.shortcode === lastShortcode;
             });
 
             if (indexByShortcode === -1) {
-                return posts[0];
+                return [posts[0]] ?? [];
             }
 
             return posts.slice(0, indexByShortcode).reverse();
+        };
+
+        const getFreshPostsNotExistsDb = async (posts) => {
+            const queryNotExistsPosts = posts.map((post) => new Promise(async (resolve, reject) => {
+                try {
+                    //console.log('post exists', await accountModel.isPostExists(post.shortcode))
+                    const exists = await accountModel.isPostExists(post.shortcode);
+                    console.log(exists);
+                    resolve(exists ? null : post)
+                } catch (err) {
+                    throw new Error('Error checking posts on exists', {cause: err})
+                }
+            }));
+            return (await Promise.all(queryNotExistsPosts)).filter((post) => post !== null && post !== undefined);
+        };
+
+        const returnPublics = {
+            posts: [],
+            video: [],
+        };
+
+        const attachedPosts = posts.filter((post) => post.is_attached);
+
+        if (attachedPosts.length > 0) {
+            const newPosts = await getFreshPostsNotExistsDb(publics.posts);
+            returnPublics.posts.push(...newPosts);
+            returnPublics.posts.reverse();
+        } else {
+            returnPublics.posts = getFreshPosts(posts, (await accountModel.getLastMediaPost())?.ig_shortcode);
+        }
+
+        const attachedVideo = video.filter((post) => post.is_attached);
+
+        if (attachedVideo.length > 0) {
+            const newPosts = await getFreshPostsNotExistsDb(publics.video);
+            returnPublics.video.push(...newPosts);
+            returnPublics.video.reverse();
+        } else {
+            returnPublics.video = getFreshPosts(video, (await accountModel.getLastMediaVideo())?.ig_shortcode);
+        }
+
+        return returnPublics;
+    }
+
+    async getPosts(igUsername) {
+        const freshPosts = {
+            posts: [],
+            video: [],
+        };
+
+        // Parse posts
+        try {
+            const posts = await this.parsePostsByUser(igUsername);
+            freshPosts.posts = getFreshPosts(posts, lastShortcode);
         } catch (err) {
             throw new Error(`Error getNewPosts username ${igUsername}`, {
                 cause: err,
             });
         }
+
+        // Parse video
+        try {
+            await this.driver.findElement({ css: 'a[href$="'+ igUsername +'/reels/"]' }).click();
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            const videoPosts = await this.parsePostsByUser(igUsername, true, {loadProfile: false});
+
+            freshPosts.video = getFreshPosts(videoPosts, lastShortcodeReel);
+        } catch (err) {
+            throw new Error(`Error parse video getNewPosts username ${igUsername}`, {
+                cause: err,
+            });
+        }
+
+        return freshPosts;
     }
 
     async getFirstPost(igUsername) {

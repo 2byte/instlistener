@@ -137,10 +137,14 @@ export default class InstagramWorker {
             }
 
             try {
-                const medias = await this.#instagramClient.getNewPosts(
+                const { posts, video } = await this.#instagramClient.getNewPosts(
                     account.username,
                     (await account.lastMedia).ig_shortcode
                 );
+
+                video.forEach((v) => v.is_video = 1);
+                const medias = [...posts,...video];
+
                 clearTimeout(this.#waitingNewPosts[account.username]);
                 //console.log('medias ', medias, account.username, (await account.lastMedia).ig_shortcode);
                 if (medias.length === 0) continue;
