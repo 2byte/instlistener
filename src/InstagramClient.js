@@ -428,7 +428,7 @@ export default class InstagramClient {
             returnPublics.posts.push(...newPosts);
             returnPublics.posts.reverse();
         } else {
-            returnPublics.posts = getFreshPosts(posts, (await accountModel.getLastMediaPost())?.ig_shortcode);
+            returnPublics.posts = getFreshPosts(posts, (await accountModel.lastMediaPost)?.ig_shortcode);
         }
 
         const attachedVideo = video.filter((post) => post.is_attached);
@@ -438,7 +438,7 @@ export default class InstagramClient {
             returnPublics.video.push(...newPosts);
             returnPublics.video.reverse();
         } else {
-            returnPublics.video = getFreshPosts(video, (await accountModel.getLastMediaVideo())?.ig_shortcode);
+            returnPublics.video = getFreshPosts(video, (await accountModel.lastMediaVideo)?.ig_shortcode);
         }
 
         return returnPublics;

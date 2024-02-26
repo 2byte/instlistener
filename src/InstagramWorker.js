@@ -200,7 +200,7 @@ export default class InstagramWorker {
             try {
                 const { posts, video } = await this.#instagramClient.getNewPosts({
                     accountModel: account,
-                    publics: this.#instagramClient.getPosts(account.username),
+                    publics: await this.#instagramClient.getPosts(account.username),
                 });
 
                 video.forEach((v) => v.is_video = 1);
