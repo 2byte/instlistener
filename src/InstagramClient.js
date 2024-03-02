@@ -392,28 +392,34 @@ export default class InstagramClient {
     }) {
         const {posts, video} = publics;
 
-        const getFreshPosts = (posts, lastShortcode) => {
+        const getFreshPosts = async (posts, lastShortcode) => {
             const indexByShortcode = posts.findIndex((post, i) => {
                 return post.shortcode === lastShortcode;
             });
 
             if (indexByShortcode === -1) {
-                return [posts[0]] ?? [];
+                try {
+                    const exists = await accountModel.isPostExists(posts[0].shortcode);
+                } catch (err) {
+                    console.log(`Error checking on exists a post for user ${accountModel.user}`, posts[0], err)
+                }
+                return !exists ? [posts[0]] : [];
             }
 
-            return posts.slice(0, indexByShortcode).reverse();
+            return (await getFreshPostsNotExistsDb(posts.slice(0, indexByShortcode))).reverse();
         };
 
         const getFreshPostsNotExistsDb = async (posts) => {
             const queryNotExistsPosts = posts.map((post) => new Promise(async (resolve, reject) => {
                 try {
                     const exists = await accountModel.isPostExists(post.shortcode);
-                    resolve(exists ? null : post)
+                    //console.log('exists', post.shortcode, exists)
+                    resolve(!exists ? post : false)
                 } catch (err) {
                     throw new Error('Error checking posts on exists', {cause: err})
                 }
             }));
-            return (await Promise.all(queryNotExistsPosts)).filter((post) => post !== null && post !== undefined);
+            return (await Promise.all(queryNotExistsPosts)).filter((post) => post !== false);
         };
 
         const returnPublics = {
@@ -424,19 +430,26 @@ export default class InstagramClient {
         const attachedPosts = posts.filter((post) => post.is_attached);
 
         if (attachedPosts.length > 0) {
-            const newPosts = await getFreshPostsNotExistsDb(publics.posts);
-            returnPublics.posts.push(...newPosts);
-            returnPublics.posts.reverse();
+            const newPosts = await getFreshPosts(publics.posts, (await accountModel.lastMediaPost)?.ig_shortcode);
+            returnPublics.posts = newPosts;
+
+            //returnPublics.posts.push(...newPosts);
+            //returnPublics.posts.reverse();
+            console.log('new posts', ...newPosts.map(item => item.shortcode))
         } else {
-            returnPublics.posts = getFreshPosts(posts, (await accountModel.lastMediaPost)?.ig_shortcode);
+            returnPublics.posts = await getFreshPosts(posts, (await accountModel.lastMediaPost)?.ig_shortcode);
         }
 
+        const attachedVideo = video.filter((post) => post.is_attached);
+
         if (attachedVideo.length > 0) {
-            const newPosts = await getFreshPostsNotExistsDb(publics.video);
-            returnPublics.video.push(...newPosts);
-            returnPublics.video.reverse();
+            const newPosts = await getFreshPosts(publics.video, (await accountModel.lastMediaVideo)?.ig_shortcode);
+            returnPublics.video = newPosts;
+            //returnPublics.video.push(...newPosts);
+            //returnPublics.video.reverse();
+            console.log('new video', ...newPosts.map(item => item.shortcode))
         } else {
-            returnPublics.video = getFreshPosts(video, (await accountModel.lastMediaVideo)?.ig_shortcode);
+            returnPublics.video = await getFreshPosts(video, (await accountModel.lastMediaVideo)?.ig_shortcode);
         }
 
         return returnPublics;
