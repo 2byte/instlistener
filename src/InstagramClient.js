@@ -431,6 +431,8 @@ export default class InstagramClient {
             returnPublics.posts = getFreshPosts(posts, (await accountModel.lastMediaPost)?.ig_shortcode);
         }
 
+        const attachedVideo = video.filter((post) => post.is_attached);
+
         if (attachedVideo.length > 0) {
             const newPosts = await getFreshPostsNotExistsDb(publics.video);
             returnPublics.video.push(...newPosts);
