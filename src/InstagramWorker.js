@@ -207,12 +207,15 @@ export default class InstagramWorker {
 
                 const medias = [...posts,...video];
 
+                console.log('new media account', account.username, ...medias.map(item => item.shortcode));
+
                 clearTimeout(this.#waitingNewPosts[account.username]);
                 //console.log('medias ', medias, account.username, (await account.lastMedia).ig_shortcode);
                 if (medias.length === 0) continue;
 
                 try {
-                    await account.addMedias(medias, true);
+                    const result = await account.addMedias(medias, true);
+                    console.log(result);
                 } catch (err) {
                     console.error('Error adding medias', err);
                 }
@@ -221,9 +224,9 @@ export default class InstagramWorker {
             } catch (err) {
                 console.error(`${new Date()} Error getting new posts to loop ${account.username}`, err)
 
-                if (err?.cause?.message?.includes('stale element reference: stale') || err?.cause?.message?.includes('Waiting for element to be')) {
+                if (err?.cause?.message?.includes('stale element reference: stale') || err?.cause?.message?.includes('Waiting for element to be') || this.#instagramClient.checkErrorLoadPage()) {
                     clearTimeout(this.#waitingNewPosts[account.username]);
-                    console.log('Deffering restart loop with pause');
+                    console.info('Deffering restart loop with pause');
                     this.doPauseLoop();
                 }
             }

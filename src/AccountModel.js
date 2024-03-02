@@ -71,7 +71,6 @@ export default class AccountModel {
         );
     }
     get lastMediaVideo() {
-        
         return this.#db.get(
             "SELECT * FROM `ig_account_medias` WHERE `account_id`=? AND `is_video`=1 ORDER BY `id` DESC LIMIT 1", this.#attributes.id
         );
@@ -107,7 +106,7 @@ export default class AccountModel {
                     media.display_url,
                     media.caption,
                     media.thumbnail_url,
-                    +media.is_video,
+                    media.is_video == 1 ? 1 : 0,
                     +isNew,
                 ];
             })
@@ -148,7 +147,7 @@ export default class AccountModel {
         return (await this.#db.get(
             "SELECT * FROM `ig_account_medias` WHERE `ig_shortcode`=? AND `account_id`=?",
             [shortcode, this.#attributes.id]
-        )) !== null;
+        )) !== undefined;
     }
 
     createSqlFields(attributes) {
