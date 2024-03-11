@@ -303,9 +303,9 @@ export default class InstagramClient {
             let elementPosts = [];
 
             if (!parseReel) {
-                await this.driver.wait(until.elementLocated({ css: '._aabd' }));
+                await this.driver.wait(until.elementLocated({ css: '._ac7v' }));
                 elementPosts = await this.driver.findElements({
-                    css: '._aabd',
+                    css: 'div.x1lliihq.x1n2onr6',
                 });
             }
             if (parseReel) {
@@ -400,10 +400,10 @@ export default class InstagramClient {
             if (indexByShortcode === -1) {
                 try {
                     const exists = await accountModel.isPostExists(posts[0].shortcode);
+                    return !exists ? [posts[0]] : [];
                 } catch (err) {
-                    console.log(`Error checking on exists a post for user ${accountModel.user}`, posts[0], err)
+                    console.log(`Error checking on exists a post for user ${accountModel.username}`, posts[0], err)
                 }
-                return !exists ? [posts[0]] : [];
             }
 
             return (await getFreshPostsNotExistsDb(posts.slice(0, indexByShortcode))).reverse();
@@ -432,9 +432,6 @@ export default class InstagramClient {
         if (attachedPosts.length > 0) {
             const newPosts = await getFreshPosts(publics.posts, (await accountModel.lastMediaPost)?.ig_shortcode);
             returnPublics.posts = newPosts;
-
-            //returnPublics.posts.push(...newPosts);
-            //returnPublics.posts.reverse();
             console.log('new posts', ...newPosts.map(item => item.shortcode))
         } else {
             returnPublics.posts = await getFreshPosts(posts, (await accountModel.lastMediaPost)?.ig_shortcode);
@@ -445,8 +442,6 @@ export default class InstagramClient {
         if (attachedVideo.length > 0) {
             const newPosts = await getFreshPosts(publics.video, (await accountModel.lastMediaVideo)?.ig_shortcode);
             returnPublics.video = newPosts;
-            //returnPublics.video.push(...newPosts);
-            //returnPublics.video.reverse();
             console.log('new video', ...newPosts.map(item => item.shortcode))
         } else {
             returnPublics.video = await getFreshPosts(video, (await accountModel.lastMediaVideo)?.ig_shortcode);
