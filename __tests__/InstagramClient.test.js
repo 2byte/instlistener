@@ -1,34 +1,39 @@
-import { describe, it, beforeAll, expect, vi } from "vitest";
-import InstagramClient from "../src/InstagramClient";
+import { describe, it, beforeAll, expect, vi } from 'vitest';
+import InstagramClient from '../src/InstagramClient';
 import { config } from 'dotenv';
 import { readFileSync } from 'fs';
 
-describe("Instagram Client", () => {
-
-    config({path: __dirname + '/../.env'});
+describe('Instagram Client', () => {
+    config({ path: __dirname + '/../.env' });
 
     it('Handle instagram posts', async () => {
-
         const testDriver = (await import('./fixtures/test_driver'))();
 
         const testPostsJson = readFileSync(__dirname + '/results/posts1.json');
-        const testPosts = InstagramClient.handleJsonResponseWithPosts(testPostsJson);
+        const testPosts =
+            InstagramClient.handleJsonResponseWithPosts(testPostsJson);
 
-        InstagramClient.prototype.getPostsByUser = vi.fn().mockImplementation(async () => {
-            return testPosts;
-        });
+        InstagramClient.prototype.getPostsByUser = vi
+            .fn()
+            .mockImplementation(async () => {
+                return testPosts;
+            });
 
         const instagramClient = InstagramClient.init(testDriver);
 
         await testDriver.driver.quit();
 
-        const result = InstagramClient.handleJsonResponseWithPosts(testPostsJson);
+        const result =
+            InstagramClient.handleJsonResponseWithPosts(testPostsJson);
 
         expect(result.length).toBeGreaterThan(0);
 
         const postIndex3 = result[2];
 
-        const newPosts = await instagramClient.getNewPosts('testuser', postIndex3.shortcode);
+        const newPosts = await instagramClient.getNewPosts(
+            'testuser',
+            postIndex3.shortcode
+        );
         //console.log(newPosts);
         expect(newPosts).toHaveLength(2);
         expect(newPosts[0].shortcode).toEqual(result[1].shortcode);
@@ -44,29 +49,58 @@ describe("Instagram Client", () => {
             .useSession()
             .login(process.env.IG_LOGIN, process.env.IG_PASS);
 
-        const newPublics = await instagramClient.getNewPosts('bellacampox', 'C3oJwZlsmAD', 'C3Vl6aFrHXw');
+        const accountModel = vi.fn(() => ({
+            username: 'tsum_moscow',
+            get lastMediaPost() {
+                return Promise.resolve({ ig_shortcode: 'C4n6qV6iU_9' });
+            },
+            get lastMediaVideo() {
+                return Promise.resolve({ ig_shortcode: 'C4isYfoCoOK' });
+            },
+            isPostExists() {
+                return Promise.resolve(false);
+            }
+        }));
 
+        const model = new accountModel();
+        const publics = await instagramClient.getPosts(model.username);
+        //console.log(publics);
+        const newPublics = await instagramClient.getNewPosts({
+            accountModel: model,
+            publics,
+        });
+        console.log(newPublics.posts.length);
         expect(newPublics.posts.length).toBeGreaterThan(0);
-        expect(newPublics.posts[0].shortcode).toEqual('CUOJr8EgKRM');
-        expect(newPublics.video[0].shortcode).toEqual('C3nF7GTO_IS');
+        expect(newPublics.posts[0].shortcode).toEqual('C4p0tEVCDuj');
+        expect(newPublics.video[0].shortcode).toEqual('C4poDwXila-');
     }, 70000);
 
     it('Testing getFreshPosts posts', async () => {
-
         const testDriver = vi.fn();
 
         const instagramClient = InstagramClient.init((await testDriver).driver);
 
-        const testPostsJson = JSON.parse(readFileSync(__dirname + '/results/parsed_posts.json'));
+        const testPostsJson = JSON.parse(
+            readFileSync(__dirname + '/results/parsed_posts.json')
+        );
 
-        const accountModel = vi.fn();
+        const accountModel = class {
+            get lastMediaPost() {
+                return Promise.resolve({ ig_shortcode: 'code2' });
+            }
+            get lastMediaVideo() {
+                return Promise.resolve({ ig_shortcode: 'code2' });
+            }
+        };
 
-        accountModel.prototype.getLastMediaPost = vi.fn().mockImplementation(async () => {
-            return {ig_shortcode: 'code2'};
-        });
-        accountModel.prototype.getLastMediaVideo = vi.fn().mockImplementation(async () => {
-            return {ig_shortcode: 'code2'};
-        });
+        accountModel.prototype.isPostExists = vi
+            .fn()
+            .mockImplementation(async (shortcode) => {
+                if (['code4', 'code3'].includes(shortcode)) {
+                    return false;
+                }
+                return true;
+            });
 
         // Getting new posts
         const newPosts = await instagramClient.getNewPosts({
@@ -82,15 +116,48 @@ describe("Instagram Client", () => {
 
         expect(newPosts.video[0].shortcode).toEqual('code3');
         expect(newPosts.video[1].shortcode).toEqual('code4');
+   });
 
-        // Getting new posts when to haved attached posts
+    it('Testing getFreshPosts posts with attached posts', async () => {
+        const testDriver = vi.fn();
+
+        const instagramClient = InstagramClient.init((await testDriver).driver);
+
+        const testPostsJson = JSON.parse(
+            readFileSync(__dirname + '/results/parsed_posts.json')
+        );
+
+        const accountModel = class {
+            get lastMediaPost() {
+                return Promise.resolve({ ig_shortcode: 'code1' });
+            }
+            get lastMediaVideo() {
+                return Promise.resolve({ ig_shortcode: 'code1' });
+            }
+        };
+
+        accountModel.prototype.isPostExists = vi
+            .fn()
+            .mockImplementation(async (shortcode) => {
+                if (['code4', 'code1'].includes(shortcode)) {
+                    return false;
+                }
+                return true;
+            });
+
         testPostsJson.posts[0].is_attached = 1;
-        testPostsJson.posts[1].is_attached = 1;
 
-        const mockIsPostExists = vi.fn()
-            .mockImplementationOnce(async () => true)
-            .mockImplementationOnce(async () => true);
-        accountModel.prototype.isPostExists = mockIsPostExists;
+        Object.defineProperties(accountModel, {
+            lastMediaPost: Promise.resolve({ ig_shortcode: 'code1' }),
+        });
+        accountModel.prototype.isPostExists = vi
+            .fn()
+            .mockImplementation(async (shortcode) => {
+                if (['code4', 'code1'].includes(shortcode)) {
+                    return true;
+                }
+                return false;
+            });
 
         const new2posts = await instagramClient.getNewPosts({
             accountModel: new accountModel(),
@@ -98,20 +165,53 @@ describe("Instagram Client", () => {
         });
 
         expect(new2posts.posts.length).toEqual(2);
-        expect(new2posts.posts[0].shortcode).toEqual('code1');
-        expect(new2posts.posts[1].shortcode).toEqual('code2');
+        expect(new2posts.posts[0].shortcode).toEqual('code2');
+        expect(new2posts.posts[1].shortcode).toEqual('code3');
+    });
 
-        // Getting new posts when to haved attached video
+    it('Testing getFreshPosts posts with attached video', async () => {
+        const testDriver = vi.fn();
+
+        const instagramClient = InstagramClient.init((await testDriver).driver);
+
+        const testPostsJson = JSON.parse(
+            readFileSync(__dirname + '/results/parsed_posts.json')
+        );
+
+        const accountModel = class {
+            get lastMediaPost() {
+                return Promise.resolve({ ig_shortcode: 'code1' });
+            }
+            get lastMediaVideo() {
+                return Promise.resolve({ ig_shortcode: 'code1' });
+            }
+        };
+
+        accountModel.prototype.isPostExists = vi
+            .fn()
+            .mockImplementation(async (shortcode) => {
+                if (['code4', 'code1'].includes(shortcode)) {
+                    return false;
+                }
+                return true;
+            });
+
+        testPostsJson.posts[0].is_attached = 1;
+
+        Object.defineProperties(accountModel, {
+            lastMediaPost: Promise.resolve({ ig_shortcode: 'code1' }),
+        });
+        accountModel.prototype.isPostExists = vi
+            .fn()
+            .mockImplementation(async (shortcode) => {
+                if (['code4', 'code1'].includes(shortcode)) {
+                    return true;
+                }
+                return false;
+            });
+
         testPostsJson.posts = [];
         testPostsJson.video[0].is_attached = 1;
-        testPostsJson.video[1].is_attached = 1;
-
-        const videoIsExists = vi.fn()
-            .mockImplementation(async () => false)
-            .mockImplementationOnce(async () => true)
-            .mockImplementationOnce(async () => true);
-
-        accountModel.prototype.isPostExists = videoIsExists;
 
         const new2video = await instagramClient.getNewPosts({
             accountModel: new accountModel(),
@@ -119,8 +219,7 @@ describe("Instagram Client", () => {
         });
 
         expect(new2video.video.length).toEqual(2);
-        expect(new2video.video[0].shortcode).toEqual('code1');
-        expect(new2video.video[1].shortcode).toEqual('code2');
-
+        expect(new2video.video[0].shortcode).toEqual('code2');
+        expect(new2video.video[1].shortcode).toEqual('code3');
     });
 });

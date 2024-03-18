@@ -394,12 +394,13 @@ export default class InstagramClient {
 
         const getFreshPosts = async (posts, lastShortcode) => {
             const indexByShortcode = posts.findIndex((post, i) => {
+                //console.log(post.shortcode, lastShortcode, post.shortcode === lastShortcode);
                 return post.shortcode === lastShortcode;
             });
-
             if (indexByShortcode === -1) {
                 try {
                     const exists = await accountModel.isPostExists(posts[0].shortcode);
+                    //console.log('exists', posts[0].shortcode, exists)
                     return !exists ? [posts[0]] : [];
                 } catch (err) {
                     console.log(`Error checking on exists a post for user ${accountModel.username}`, posts[0], err)
@@ -427,24 +428,16 @@ export default class InstagramClient {
             video: [],
         };
 
-        const attachedPosts = posts.filter((post) => post.is_attached);
-
-        if (attachedPosts.length > 0) {
-            const newPosts = await getFreshPosts(publics.posts, (await accountModel.lastMediaPost)?.ig_shortcode);
+        if (posts.length > 0) {
+            const newPosts = await getFreshPosts(posts, (await accountModel.lastMediaPost)?.ig_shortcode);
             returnPublics.posts = newPosts;
             console.log('new posts', ...newPosts.map(item => item.shortcode))
-        } else {
-            returnPublics.posts = await getFreshPosts(posts, (await accountModel.lastMediaPost)?.ig_shortcode);
         }
 
-        const attachedVideo = video.filter((post) => post.is_attached);
-
-        if (attachedVideo.length > 0) {
-            const newPosts = await getFreshPosts(publics.video, (await accountModel.lastMediaVideo)?.ig_shortcode);
+        if (video.length > 0) {
+            const newPosts = await getFreshPosts(video, (await accountModel.lastMediaVideo)?.ig_shortcode);
             returnPublics.video = newPosts;
             console.log('new video', ...newPosts.map(item => item.shortcode))
-        } else {
-            returnPublics.video = await getFreshPosts(video, (await accountModel.lastMediaVideo)?.ig_shortcode);
         }
 
         return returnPublics;
