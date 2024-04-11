@@ -52,10 +52,10 @@ describe('Instagram Client', () => {
         const accountModel = vi.fn(() => ({
             username: 'tsum_moscow',
             get lastMediaPost() {
-                return Promise.resolve({ ig_shortcode: 'C4n6qV6iU_9' });
+                return Promise.resolve({ ig_shortcode: 'C5n8-ySi0en' });
             },
             get lastMediaVideo() {
-                return Promise.resolve({ ig_shortcode: 'C4isYfoCoOK' });
+                return Promise.resolve({ ig_shortcode: 'C5YGHweJIU5' });
             },
             isPostExists() {
                 return Promise.resolve(false);
@@ -71,8 +71,8 @@ describe('Instagram Client', () => {
         });
         console.log(newPublics.posts.length);
         expect(newPublics.posts.length).toBeGreaterThan(0);
-        expect(newPublics.posts[0].shortcode).toEqual('C4p0tEVCDuj');
-        expect(newPublics.video[0].shortcode).toEqual('C4poDwXila-');
+        expect(newPublics.posts[0].shortcode).toEqual('C5oCiwJiBwy');
+        expect(newPublics.video[0].shortcode).toEqual('C5akN2wL0Ki');
     }, 70000);
 
     it('Testing getFreshPosts posts', async () => {
