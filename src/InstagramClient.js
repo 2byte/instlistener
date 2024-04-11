@@ -330,7 +330,7 @@ export default class InstagramClient {
                 ).split('/');
 
                 const imgElement = await element.findElement({
-                    css: parseReel ? '._aag6.x1lvsgvq' : 'img.x5yr21d',
+                    css: parseReel ? '.x1n2onr6.x1lvsgvq' : 'img.x5yr21d',
                 });
 
                 let caption = '';
@@ -397,7 +397,11 @@ export default class InstagramClient {
                 //console.log(post.shortcode, lastShortcode, post.shortcode === lastShortcode);
                 return post.shortcode === lastShortcode;
             });
+            if (indexByShortcode !== -1) {
+                console.info('[OK] last post found')
+            }
             if (indexByShortcode === -1) {
+                console.log('last post not found, list posts', posts.map((post) => post.shortcode).join(' '));
                 try {
                     const exists = await accountModel.isPostExists(posts[0].shortcode);
                     //console.log('exists', posts[0].shortcode, exists)
