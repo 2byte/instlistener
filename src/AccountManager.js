@@ -45,7 +45,13 @@ export default class AccountManager {
     }
 
     deleteAccount(id) {
-        return this.find(id).delete();
+        const account = this.find(id);
+
+        if (account !== undefined) {
+            return this.find(id).delete();
+        }
+
+        return this.db.exec('DELETE FROM `ig_track_accounts` WHERE `id`='+ id);
     }
 
     track(id, date) {
